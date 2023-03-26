@@ -4,7 +4,8 @@ import mercantile
 from shapely.geometry import box
 from shapely.geometry import shape
 import random
-import os 
+import os
+from shapely.ops import clip_by_rect
 
 data_location = None
 cached_tileset_names = None
@@ -183,13 +184,20 @@ def get_features(tileset: str, x: int, y: int, z: int):
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
     layers = fiona.listlayers(ds_path)
     result = []
+
     for layer_name in layers:
         processed_features = []
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             features = layer.filter(bbox=bbox)
             for feat in features:
                 processed_features.append({
-                    "geometry": shape(feat.geometry),
+                    "geometry": clip_by_rect(
+                        shape(feat.geometry),
+                        bbox[0],
+                        bbox[1],
+                        bbox[2],
+                        bbox[3],
+                    ),
                     "properties": feat.properties
                 })
         result.append((layer_name, processed_features))
