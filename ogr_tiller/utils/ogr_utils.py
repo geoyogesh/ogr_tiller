@@ -23,7 +23,7 @@ def setup_ogr_cache(data_folder):
     # update global variablea
     global data_location, tilesets
     data_location = data_folder
-    tilesets = get_tilesets(data_location)
+    tilesets = get_tilesets()
 
 
 def format_layer_name(name: str):
