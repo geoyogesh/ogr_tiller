@@ -1,12 +1,8 @@
 from typing import Any
 import fiona
-import pprint
 import mercantile
-from shapely.ops import cascaded_union
 from shapely.geometry import box
-from osgeo import osr
 from shapely.geometry import shape
-import math
 import random
 import os 
 
@@ -14,7 +10,7 @@ data_location = None
 tilesets = None
 
 
-def get_tilesets(data_location):
+def get_tilesets():
     result = []
     dir_list = os.listdir(data_location)
     for file in dir_list:
@@ -30,16 +26,17 @@ def setup_ogr_cache(data_folder):
     tilesets = get_tilesets(data_location)
 
 
-
-
 def format_layer_name(name: str):
     return name.lower()
+
 
 def format_field_name(name: str):
     return name.lower()
 
+
 def format_field_type(name: str):
     return name.lower()
+
 
 def get_tile_json(tileset: str) -> Any:
     result = {
@@ -88,101 +85,97 @@ def get_tile_json(tileset: str) -> Any:
 
 
 def get_starter_style() -> Any:
-    styleJson = {
+    style_json = {
         'version': 8,
         'sources': {},
         'layers': [],
     }
 
     for tileset in tilesets:
-        styleJson['sources'][tileset] = {
+        style_json['sources'][tileset] = {
                 'type': 'vector',
                 'url': f'http://0.0.0.0:8080/tilesets/{tileset}/info/tile.json'
             }
- 
 
     for tileset in tilesets:
         ds_path = os.path.join(data_location, f'{tileset}.gpkg')
-        layerGeometryTypes = []
+        layer_geometry_types = []
         layers = fiona.listlayers(ds_path)
         for layer_name in layers:
             with fiona.open(ds_path, 'r', layer=layer_name) as layer:
-                layerGeometryTypes.append((tileset, layer_name, layer.schema['geometry']))
+                layer_geometry_types.append((tileset, layer_name, layer.schema['geometry']))
 
-    
-    
-
-
-    geometryOrder = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
-    layerIndex = 0
-    for orderGeometry in geometryOrder:
-        color = getColor(layerIndex)
-        for tileset, layer_name, geometryType in layerGeometryTypes:
+    geometry_order = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
+    layer_index = 0
+    for orderGeometry in geometry_order:
+        color = get_color(layer_index)
+        for tileset, layer_name, geometryType in layer_geometry_types:
             if orderGeometry == geometryType:
-                styleJson['layers'].append(getLayerStyle(tileset, color, layer_name, orderGeometry))
-        layerIndex += 1
+                style_json['layers'].append(get_layer_style(tileset, color, layer_name, orderGeometry))
+        layer_index += 1
     
-    return styleJson
+    return style_json
 
 
-
-def getLayerStyle(tileset: str, color: str, layer_name: str, geometry_type: str) -> Any: 
-        if geometry_type == 'LineString' or geometry_type == 'MultiLineString':
-            return {
-                'id': layer_name,
-                'type': 'line',
-                'source': tileset,
-                'source-layer': layer_name,
-                'filter': ["==", "$type", "LineString"],
-                'layout': {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                'paint': {
-                    'line-color': color,
-                    'line-width': 1,
-                    'line-opacity': 0.75
-                }
+def get_layer_style(tileset: str, color: str, layer_name: str, geometry_type: str) -> Any:
+    if geometry_type == 'LineString' or geometry_type == 'MultiLineString':
+        return {
+            'id': layer_name,
+            'type': 'line',
+            'source': tileset,
+            'source-layer': layer_name,
+            'filter': ["==", "$type", "LineString"],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': color,
+                'line-width': 1,
+                'line-opacity': 0.75
             }
-        elif geometry_type == 'Polygon' or geometry_type == 'MultiPolygon':
-            return {
-                'id': layer_name,
-                'type': 'line',
-                'source': tileset,
-                'source-layer': layer_name,
-                'filter': ["==", "$type", "Polygon"],
-                'layout': {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                'paint': {
-                    'line-color': color,
-                    'line-width': 1,
-                    'line-opacity': 0.75
-                }
+        }
+    elif geometry_type == 'Polygon' or geometry_type == 'MultiPolygon':
+        return {
+            'id': layer_name,
+            'type': 'line',
+            'source': tileset,
+            'source-layer': layer_name,
+            'filter': ["==", "$type", "Polygon"],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': color,
+                'line-width': 1,
+                'line-opacity': 0.75
             }
-        elif geometry_type == 'Point' or geometry_type == 'MultiPoint':
-            return {
-                'id': layer_name,
-                'type': 'circle',
-                'source': tileset,
-                'source-layer': layer_name,
-                'filter': ["==", "$type", "Point"],
-                'paint': {
-                    'circle-color': color,
-                    'circle-radius': 2.5,
-                    'circle-opacity': 0.75
-                }
+        }
+    elif geometry_type == 'Point' or geometry_type == 'MultiPoint':
+        return {
+            'id': layer_name,
+            'type': 'circle',
+            'source': tileset,
+            'source-layer': layer_name,
+            'filter': ["==", "$type", "Point"],
+            'paint': {
+                'circle-color': color,
+                'circle-radius': 2.5,
+                'circle-opacity': 0.75
             }
-        else:
-            print('unhandled geometry type')
-        return None
+        }
+    else:
+        print('unhandled geometry type')
+    return None
 
-def getColor(i: int):
+
+def get_color(i: int):
     colors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'];
     if i < len(colors):
         return colors[i]
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
+
 
 def get_features(tileset: str, x: int, y: int, z: int):
     bbox_bounds = mercantile.bounds(x, y, z)

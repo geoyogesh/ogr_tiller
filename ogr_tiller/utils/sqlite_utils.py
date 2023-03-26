@@ -7,6 +7,7 @@ from typing import Any
 cache_location = None
 db_file = None
 
+
 def update_cache(tileset: str, x: int, y: int, z: int, data: Any):  
     conn = None
     try:
@@ -23,6 +24,7 @@ def update_cache(tileset: str, x: int, y: int, z: int, data: Any):
     finally:
         if conn:
             conn.close()
+
 
 def read_cache(tileset: str, x: int, y: int, z: int):
     try:
@@ -47,14 +49,12 @@ def read_cache(tileset: str, x: int, y: int, z: int):
             conn.close()
 
 
-
 def setup_cache(cache_folder):
     global cache_location, db_file
 
     # update global variablea
     cache_location = cache_folder
     db_file = os.path.join(cache_location, 'cache.mbtiles')
-
 
     if os.path.isfile(db_file):
         return
@@ -78,5 +78,3 @@ def setup_cache(cache_folder):
     finally:
         if conn:
             conn.close()
-
-
