@@ -27,8 +27,10 @@ def cli():
     parser = argparse.ArgumentParser(prog='ogr_tiller')
     parser.add_argument('--data_folder', help='data folder', required=True)
     parser.add_argument('--cache_folder', help='cache folder', required=True)
+    parser.add_argument('--disable_caching', help='disable caching', default='false')
     parser.add_argument('--port', help='port', default='8080')
 
     args = parser.parse_args()
-    param = JobParam(args.data_folder, args.cache_folder, args.port)
+    disable_caching = args.disable_caching.lower().capitalize() == 'True'
+    param = JobParam(args.data_folder, args.cache_folder, args.port, disable_caching)
     execute(param)

@@ -14,7 +14,8 @@ import json
 
 def start_api(job_param: JobParam):
     # setup mbtile cache
-    setup_cache(job_param.cache_folder)
+    if not job_param.disable_caching:
+        setup_cache(job_param.cache_folder)
     setup_ogr_cache(job_param.data_folder)
 
     app = FastAPI()
@@ -52,13 +53,14 @@ def start_api(job_param: JobParam):
         if tileset not in get_tilesets():
             return Response(status_code=404)
 
-        cached_data = read_cache(tileset, x, y, z)
-        if cached_data is not None:
-            headers = {
-                "content-type": "application/vnd.mapbox-vector-tile",
-                "Cache-Control": 'no-cache, no-store'
-            }
-            return Response(content=cached_data, headers=headers)
+        if not job_param.disable_caching:
+            cached_data = read_cache(tileset, x, y, z)
+            if cached_data is not None:
+                headers = {
+                    "content-type": "application/vnd.mapbox-vector-tile",
+                    "Cache-Control": 'no-cache, no-store'
+                }
+                return Response(content=cached_data, headers=headers)
 
         layer_features = get_features(tileset, x, y, z)
         if len(layer_features) == 0:
@@ -71,7 +73,8 @@ def start_api(job_param: JobParam):
             return timeout_response()
 
         # update cache
-        update_cache(tileset, x, y, z, data)
+        if not job_param.disable_caching:
+            update_cache(tileset, x, y, z, data)
 
         headers = {
             "content-type": "application/vnd.mapbox-vector-tile",
@@ -101,5 +104,6 @@ if __name__ == "__main__":
     data_folder = './data/'
     cache_folder = './cache/'
     port = '8080'
-    job_param = JobParam(data_folder, cache_folder, port)
+    disable_caching = True
+    job_param = JobParam(data_folder, cache_folder, port, disable_caching)
     start_api(job_param)
