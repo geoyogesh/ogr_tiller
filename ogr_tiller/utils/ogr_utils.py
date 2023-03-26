@@ -7,23 +7,22 @@ import random
 import os 
 
 data_location = None
-tilesets = None
+cached_tileset_names = None
 
 
 def get_tilesets():
-    result = []
-    dir_list = os.listdir(data_location)
-    for file in dir_list:
-        if file.endswith('.gpkg'):
-            result.append(file.split('.')[0])
-    return result
+    return cached_tileset_names
 
 
 def setup_ogr_cache(data_folder):
     # update global variablea
-    global data_location, tilesets
+    global data_location, cached_tileset_names
     data_location = data_folder
-    tilesets = get_tilesets()
+    cached_tileset_names = []
+    dir_list = os.listdir(data_location)
+    for file in dir_list:
+        if file.endswith('.gpkg'):
+            cached_tileset_names.append(file.split('.')[0])
 
 
 def format_layer_name(name: str):
@@ -91,13 +90,13 @@ def get_starter_style(port: str) -> Any:
         'layers': [],
     }
 
-    for tileset in tilesets:
+    for tileset in cached_tileset_names:
         style_json['sources'][tileset] = {
                 'type': 'vector',
                 'url': f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json'
             }
 
-    for tileset in tilesets:
+    for tileset in cached_tileset_names:
         ds_path = os.path.join(data_location, f'{tileset}.gpkg')
         layer_geometry_types = []
         layers = fiona.listlayers(ds_path)

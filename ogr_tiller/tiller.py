@@ -1,14 +1,14 @@
 from fastapi import FastAPI
-from utils.ogr_utils import get_starter_style, get_tile_json, get_features, get_tilesets
-from poco.job_param import JobParam
+from ogr_tiller.utils.ogr_utils import get_starter_style, get_tile_json, get_features, get_tilesets
+from ogr_tiller.poco.job_param import JobParam
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
-from utils.ogr_utils import setup_ogr_cache
-from utils.fast_api_utils import TimeOutException, timeout_response
+from ogr_tiller.utils.ogr_utils import setup_ogr_cache
+from ogr_tiller.utils.fast_api_utils import TimeOutException, timeout_response
 
-from utils.sqlite_utils import read_cache, setup_cache, update_cache
-import utils.tile_utils as tile_utils
+from ogr_tiller.utils.sqlite_utils import read_cache, setup_cache, update_cache
+import ogr_tiller.utils.tile_utils as tile_utils
 import json
 
 

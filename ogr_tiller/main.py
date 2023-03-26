@@ -1,8 +1,8 @@
 import sys
 import argparse
 
-from ogr_tiller.entities.job_param import JobParam
-from ogr_tiller.ogr_tiller import start_api
+from ogr_tiller.poco.job_param import JobParam
+from ogr_tiller.tiller import start_api
 
 
 def execute(job_param: JobParam):
