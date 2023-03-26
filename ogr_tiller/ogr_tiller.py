@@ -81,11 +81,15 @@ def start_api(job_param: JobParam):
 
     @app.get("/")
     async def index():
+        tile_urls = [
+            f'http://0.0.0.0:{job_param.port}/tilesets/{tileset}/info/tile.json'
+            for tileset in ogr_tiller.utils.ogr_utils.tilesets
+        ]
         result = {
             "styles": {
                 "starter": f'http://0.0.0.0:{job_param.port}/styles/starter.json'
             },
-            "tilesets": [f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json' for tileset in ogr_tiller.utils.ogr_utils.tilesets]
+            "tilesets": tile_urls
         }
 
         return result
