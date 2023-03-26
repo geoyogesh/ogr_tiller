@@ -131,6 +131,8 @@ dmypy.json
 
 .DS_Store
 
+.idea
+
 # exclude everything in every folder
 /data/**/*.*
 !/data/**/*.gitkeep
