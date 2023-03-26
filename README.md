@@ -6,12 +6,6 @@ Serve vector tiles from local spatial data in geopackage format
 
 Installation
 ```
-conda create -n ogr_tiller -y
-conda activate ogr_tiller
-conda config --env --add channels conda-forge
-conda config --env --set channel_priority strict
-conda install python=3 fiona -y
-
 pip3 install ogr_tiller
 ```
 
