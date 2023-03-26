@@ -7,7 +7,26 @@ from shapely.geometry import box
 from osgeo import osr
 from shapely.geometry import shape
 import math
-import random 
+import random
+import os 
+
+data_location = './data/'
+
+
+def get_tilesets(data_location):
+    result = []
+    dir_list = os.listdir(data_location)
+    for file in dir_list:
+        if file.endswith('.gpkg'):
+            result.append(file.split('.')[0])
+    return result
+
+tilesets = get_tilesets(data_location)
+
+
+
+
+
 
 def format_layer_name(name: str):
     return name.lower()
@@ -18,7 +37,7 @@ def format_field_name(name: str):
 def format_field_type(name: str):
     return name.lower()
 
-def get_tile_json() -> Any:
+def get_tile_json(tileset: str) -> Any:
     result = {
         'tilejson': '3.0.0',
         'id': 'ogr_tiller_tileset',
@@ -27,18 +46,19 @@ def get_tile_json() -> Any:
         'version': '1.0.0',
         'attribution': 'UNLICENSED',
         'scheme': 'xyz',
-        'tiles': ['http://localhost:8080/tileset/tiles/{z}/{x}/{y}.mvt'],
+        'tiles': ['http://localhost:8080/tilesets/' + tileset + '/tiles/{z}/{x}/{y}.mvt'],
         'minzoom': 0,
         'maxzoom': 22,
         'bounds': None,
         'center': None
     }
-    layers = fiona.listlayers('data/data.gpkg')
+    ds_path = os.path.join(data_location, f'{tileset}.gpkg')
+    layers = fiona.listlayers(ds_path)
 
     vector_layers = []
     for layer_name in layers:
         fields = {}
-        with fiona.open('data/data.gpkg', 'r', layer=layer_name) as layer:
+        with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             result['crs'] = str(layer.crs)
             result['crs_wkt'] = layer.crs_wkt
             schema = layer.schema
@@ -66,41 +86,48 @@ def get_tile_json() -> Any:
 def get_starter_style() -> Any:
     styleJson = {
         'version': 8,
-        'sources': {
-            'vt': {
-                'type': 'vector',
-                'url': 'http://0.0.0.0:8080/tileset/info/tile.json'
-            }
-        },
+        'sources': {},
         'layers': [],
     }
 
-    layerGeometryTypes = []
-    layers = fiona.listlayers('data/data.gpkg')
-    for layer_name in layers:
-        with fiona.open('data/data.gpkg', 'r', layer=layer_name) as layer:
-            layerGeometryTypes.append((layer_name, layer.schema['geometry']))
+    for tileset in tilesets:
+        styleJson['sources'][tileset] = {
+                'type': 'vector',
+                'url': f'http://0.0.0.0:8080/tilesets/{tileset}/info/tile.json'
+            }
+ 
+
+    for tileset in tilesets:
+        ds_path = os.path.join(data_location, f'{tileset}.gpkg')
+        layerGeometryTypes = []
+        layers = fiona.listlayers(ds_path)
+        for layer_name in layers:
+            with fiona.open(ds_path, 'r', layer=layer_name) as layer:
+                layerGeometryTypes.append((tileset, layer_name, layer.schema['geometry']))
+
+    
+    
 
 
     geometryOrder = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
     layerIndex = 0
     for orderGeometry in geometryOrder:
         color = getColor(layerIndex)
-        for layer_name, geometryType in layerGeometryTypes:
+        for tileset, layer_name, geometryType in layerGeometryTypes:
             if orderGeometry == geometryType:
-                styleJson['layers'].append(getLayerStyle(color, layer_name, orderGeometry))
+                styleJson['layers'].append(getLayerStyle(tileset, color, layer_name, orderGeometry))
         layerIndex += 1
     
     return styleJson
 
 
 
-def getLayerStyle(color: str, layer_name: str, geometry_type: str) -> Any: 
+def getLayerStyle(tileset: str, color: str, layer_name: str, geometry_type: str) -> Any: 
         if geometry_type == 'LineString' or geometry_type == 'MultiLineString':
             return {
                 'id': layer_name,
                 'type': 'line',
-                'source': 'vt',
+                'source': tileset,
                 'source-layer': layer_name,
                 'filter': ["==", "$type", "LineString"],
                 'layout': {
@@ -117,7 +144,7 @@ def getLayerStyle(color: str, layer_name: str, geometry_type: str) -> Any:
             return {
                 'id': layer_name,
                 'type': 'line',
-                'source': 'vt',
+                'source': tileset,
                 'source-layer': layer_name,
                 'filter': ["==", "$type", "Polygon"],
                 'layout': {
@@ -134,7 +161,7 @@ def getLayerStyle(color: str, layer_name: str, geometry_type: str) -> Any:
             return {
                 'id': layer_name,
                 'type': 'circle',
-                'source': 'vt',
+                'source': tileset,
                 'source-layer': layer_name,
                 'filter': ["==", "$type", "Point"],
                 'paint': {
@@ -153,15 +180,16 @@ def getColor(i: int):
         return colors[i]
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
 
-def get_features(x: int, y: int, z: int):
+def get_features(tileset: str, x: int, y: int, z: int):
     bbox_bounds = mercantile.bounds(x, y, z)
     bbox = (bbox_bounds.west, bbox_bounds.south, bbox_bounds.east, bbox_bounds.north)
 
-    layers = fiona.listlayers('data/data.gpkg')
+    ds_path = os.path.join(data_location, f'{tileset}.gpkg')
+    layers = fiona.listlayers(ds_path)
     result = []
     for layer_name in layers:
         processed_features = []
-        with fiona.open('data/data.gpkg', 'r', layer=layer_name) as layer:
+        with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             features = layer.filter(bbox=bbox)
             for feat in features:
                 processed_features.append({

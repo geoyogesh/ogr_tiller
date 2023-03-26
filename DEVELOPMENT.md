@@ -9,6 +9,6 @@ conda install -y fastapi uvicorn
 ```
 
 
-http://0.0.0.0:8080/tileset/info/tile.json
-http://0.0.0.0:8080/tileset/tiles/0/0/0.mvt
+http://0.0.0.0:8080/tilesets/detailed_streetview/info/tile.json
+http://0.0.0.0:8080/tilesets/detailed_streetview/tiles/0/0/0.mvt
 http://0.0.0.0:8080/styles/starter.json
