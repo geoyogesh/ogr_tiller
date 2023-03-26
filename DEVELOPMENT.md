@@ -1,7 +1,7 @@
 
 ```
-conda create -n ogr_tiler
-conda activate ogr_tiler
+conda create -n ogr_tiller
+conda activate ogr_tiller
 conda config --env --add channels conda-forge
 conda config --env --set channel_priority strict
 conda install python=3 fiona mapbox-vector-tile rtree mapbox-vector-tile[proj] mercantile -y
