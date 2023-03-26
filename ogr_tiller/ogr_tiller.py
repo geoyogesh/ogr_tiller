@@ -1,16 +1,15 @@
 from fastapi import FastAPI
-from entities.job_param import JobParam
+from ogr_tiller.entities.job_param import JobParam
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
-from utils.ogr_utils import setup_ogr_cache
-from utils.fast_api_utils import TimeOutException, timeout_response
+from ogr_tiller.utils.ogr_utils import setup_ogr_cache
+from ogr_tiller.utils.fast_api_utils import TimeOutException, timeout_response
 
-import utils.ogr_utils
-from utils.sqlite_utils import read_cache, setup_cache, update_cache
-import utils.tile_utils as tile_utils
+import ogr_tiller.utils.ogr_utils
+from ogr_tiller.utils.sqlite_utils import read_cache, setup_cache, update_cache
+import ogr_tiller.utils.tile_utils as tile_utils
 import json
-import os
 
 
 def start_api(job_param: JobParam):
@@ -29,7 +28,7 @@ def start_api(job_param: JobParam):
 
     @app.get("/styles/starter.json")
     async def get_style_json():
-        data = utils.ogr_utils.get_starter_style()
+        data = ogr_tiller.utils.ogr_utils.get_starter_style()
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -38,10 +37,10 @@ def start_api(job_param: JobParam):
 
     @app.get("/tilesets/{tileset}/info/tile.json")
     async def get_tileset_info(tileset: str):
-        if tileset not in utils.ogr_utils.tilesets:
+        if tileset not in ogr_tiller.utils.ogr_utils.tilesets:
             return Response(status_code=404)
 
-        data = utils.ogr_utils.get_tile_json(tileset)
+        data = ogr_tiller.utils.ogr_utils.get_tile_json(tileset)
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -50,7 +49,7 @@ def start_api(job_param: JobParam):
 
     @app.get("/tilesets/{tileset}/tiles/{z}/{x}/{y}.mvt")
     async def get_tile(tileset: str, z: int, x: int, y: int):
-        if tileset not in utils.ogr_utils.tilesets:
+        if tileset not in ogr_tiller.utils.ogr_utils.tilesets:
             return Response(status_code=404)
 
         cached_data = read_cache(tileset, x, y, z)
@@ -61,7 +60,7 @@ def start_api(job_param: JobParam):
             }
             return Response(content=cached_data, headers=headers)
 
-        layer_features = utils.ogr_utils.get_features(tileset, x, y, z)
+        layer_features = ogr_tiller.utils.ogr_utils.get_features(tileset, x, y, z)
         if len(layer_features) == 0:
             return Response(status_code=404)
 

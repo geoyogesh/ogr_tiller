@@ -1,5 +1,4 @@
 import sys
-import os
 import argparse
 
 from ogr_tiller.entities.job_param import JobParam
