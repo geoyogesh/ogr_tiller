@@ -4,9 +4,8 @@ import os
 from typing import Any
 
 # setup tile cache
-cache_location = './cache/'
-
-db_file = os.path.join(cache_location, 'cache.mbtiles')
+cache_location = None
+db_file = None
 
 def update_cache(tileset: str, x: int, y: int, z: int, data: Any):  
     conn = None
@@ -49,8 +48,13 @@ def read_cache(tileset: str, x: int, y: int, z: int):
 
 
 
-def setup_cache():
-    """ create a database connection to a SQLite database """
+def setup_cache(cache_folder):
+    global cache_location, db_file
+
+    # update global variablea
+    cache_location = cache_folder
+    db_file = os.path.join(cache_location, 'cache.mbtiles')
+
 
     if os.path.isfile(db_file):
         return

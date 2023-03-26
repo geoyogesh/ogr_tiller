@@ -10,7 +10,8 @@ import math
 import random
 import os 
 
-data_location = './data/'
+data_location = None
+tilesets = None
 
 
 def get_tilesets(data_location):
@@ -21,9 +22,12 @@ def get_tilesets(data_location):
             result.append(file.split('.')[0])
     return result
 
-tilesets = get_tilesets(data_location)
 
-
+def setup_ogr_cache(data_folder):
+    # update global variablea
+    global data_location, tilesets
+    data_location = data_folder
+    tilesets = get_tilesets(data_location)
 
 
 
