@@ -30,5 +30,5 @@ def cli():
     parser.add_argument('--port', help='port', default='8080')
 
     args = parser.parse_args()
-    param = JobParam(args.data, args.cache, args.port)
+    param = JobParam(args.data_folder, args.cache_folder, args.port)
     execute(param)
