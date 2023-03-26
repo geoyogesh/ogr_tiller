@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+from fast_api_utils import TimeOutException, timeout_response
 
 from ogr_utils import get_features, get_starter_style, get_tile_json
 import tile_utils
@@ -42,12 +43,19 @@ def start_api():
         if len(layer_features) == 0:
             return Response(status_code=404)
         
-        data = tile_utils.get_tile(layer_features, x, y, z)
+        data = None
+        try:
+            data = tile_utils.get_tile(layer_features, x, y, z)
+        except TimeOutException:
+            return timeout_response()
+
         headers = {
             "content-type": "application/vnd.mapbox-vector-tile",
             "Cache-Control": 'no-cache, no-store'
         }
         return Response(content=data, headers=headers)
+
+
 
     @app.get("/")
     async def index():
