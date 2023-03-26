@@ -2,11 +2,18 @@ from fastapi import FastAPI
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
-from fast_api_utils import TimeOutException, timeout_response
+from utils.fast_api_utils import TimeOutException, timeout_response
 
-from ogr_utils import get_features, get_starter_style, get_tile_json
-import tile_utils
+import utils.ogr_utils
+from utils.sqlite_utils import setup_cache
+import utils.tile_utils as tile_utils
 import json
+import os
+
+# setup tile cache
+cache_location = './cache/'
+setup_cache(cache_location)
+
 
 def start_api():
     app = FastAPI()
@@ -18,18 +25,9 @@ def start_api():
         allow_headers=["*"],
     )
 
-    @app.get("/tileset/info/tile.json")
-    async def get_tileset_info():
-        data = get_tile_json()
-        headers = {
-            "content-type": "application/json",
-            "Cache-Control": 'no-cache, no-store'
-        }
-        return Response(content=json.dumps(data), headers=headers)
-    
     @app.get("/styles/starter.json")
     async def get_style_json():
-        data = get_starter_style()
+        data = utils.ogr_utils.get_starter_style()
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -37,9 +35,25 @@ def start_api():
         return Response(content=json.dumps(data), headers=headers)
     
 
-    @app.get("/tileset/tiles/{z}/{x}/{y}.mvt")
-    async def get_tile(z: int, x: int, y: int):
-        layer_features = get_features(x, y, z)
+    @app.get("/tilesets/{tileset}/info/tile.json")
+    async def get_tileset_info(tileset: str):
+        if tileset not in utils.ogr_utils.tilesets:
+            return Response(status_code=404)
+        
+        data = utils.ogr_utils.get_tile_json(tileset)
+        headers = {
+            "content-type": "application/json",
+            "Cache-Control": 'no-cache, no-store'
+        }
+        return Response(content=json.dumps(data), headers=headers)
+    
+
+    @app.get("/tilesets/{tileset}/tiles/{z}/{x}/{y}.mvt")
+    async def get_tile(tileset: str, z: int, x: int, y: int):
+        if tileset not in utils.ogr_utils.tilesets:
+            return Response(status_code=404)
+        
+        layer_features = utils.ogr_utils.get_features(tileset, x, y, z)
         if len(layer_features) == 0:
             return Response(status_code=404)
         

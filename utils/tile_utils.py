@@ -2,7 +2,7 @@ from typing import Any, List, Tuple
 import mercantile
 import mapbox_vector_tile
 
-from fast_api_utils import abort_after
+from utils.fast_api_utils import abort_after
 
 
 @abort_after(1)
