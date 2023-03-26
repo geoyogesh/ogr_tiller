@@ -1,10 +1,56 @@
 import sqlite3
 from sqlite3 import Error
 import os
+from typing import Any
 
-def setup_cache(cache_location: str):
+# setup tile cache
+cache_location = './cache/'
+
+db_file = os.path.join(cache_location, 'cache.mbtiles')
+
+def update_cache(tileset: str, x: int, y: int, z: int, data: Any):  
+    conn = None
+    try:
+        conn = sqlite3.connect(db_file)
+        sql = '''
+        INSERT INTO tiles(tileset,x,y,z,data)
+              VALUES(?,?,?,?,?) 
+        '''
+        conn.execute(sql, (tileset, x, y, z, data))
+        conn.commit()
+        print(sqlite3.version)
+    except Error as e:
+        print(e)
+    finally:
+        if conn:
+            conn.close()
+
+def read_cache(tileset: str, x: int, y: int, z: int):
+    try:
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+
+        sql = """SELECT data from tiles where tileset = ? and x = ? and y = ? and z = ? """
+        cursor.execute(sql, (tileset, x, y, z))
+        record = cursor.fetchone()
+        result = None
+        if record is None:
+            result = None
+        else:
+            result = record[0]
+        cursor.close()
+        return result
+
+    except sqlite3.Error as error:
+        print("Failed to read data from sqlite table", error)
+    finally:
+        if conn:
+            conn.close()
+
+
+
+def setup_cache():
     """ create a database connection to a SQLite database """
-    db_file = os.path.join(cache_location, 'cache.mbtiles')
 
     if os.path.isfile(db_file):
         return
@@ -28,3 +74,5 @@ def setup_cache(cache_location: str):
     finally:
         if conn:
             conn.close()
+
+

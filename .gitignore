@@ -134,3 +134,7 @@ dmypy.json
 # exclude everything in every folder
 /data/**/*.*
 !/data/**/*.gitkeep
+
+/cache/**/*.*
+!/cache/**/*.gitkeep
+

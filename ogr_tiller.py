@@ -5,15 +5,13 @@ from starlette.responses import Response
 from utils.fast_api_utils import TimeOutException, timeout_response
 
 import utils.ogr_utils
-from utils.sqlite_utils import setup_cache
+from utils.sqlite_utils import read_cache, setup_cache, update_cache
 import utils.tile_utils as tile_utils
 import json
 import os
 
-# setup tile cache
-cache_location = './cache/'
-setup_cache(cache_location)
-
+# setup mbtile cache
+setup_cache()
 
 def start_api():
     app = FastAPI()
@@ -53,6 +51,15 @@ def start_api():
         if tileset not in utils.ogr_utils.tilesets:
             return Response(status_code=404)
         
+        cached_data = read_cache(tileset, x, y, z)
+        if cached_data is not None:
+            headers = {
+                "content-type": "application/vnd.mapbox-vector-tile",
+                "Cache-Control": 'no-cache, no-store'
+            }
+            return Response(content=cached_data, headers=headers)
+    
+        
         layer_features = utils.ogr_utils.get_features(tileset, x, y, z)
         if len(layer_features) == 0:
             return Response(status_code=404)
@@ -62,6 +69,10 @@ def start_api():
             data = tile_utils.get_tile(layer_features, x, y, z)
         except TimeOutException:
             return timeout_response()
+        
+
+        # update cache
+        update_cache(tileset,x, y, z, data)
 
         headers = {
             "content-type": "application/vnd.mapbox-vector-tile",
