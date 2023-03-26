@@ -1,5 +1,5 @@
 # ogr_tiller
-Serve vector tiles from local spatial data
+Serve vector tiles from local spatial data in geopackage format
 
 
 # Installation
