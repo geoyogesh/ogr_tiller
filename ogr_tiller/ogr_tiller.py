@@ -28,7 +28,7 @@ def start_api(job_param: JobParam):
 
     @app.get("/styles/starter.json")
     async def get_style_json():
-        data = ogr_tiller.utils.ogr_utils.get_starter_style()
+        data = ogr_tiller.utils.ogr_utils.get_starter_style(job_param.port)
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -40,7 +40,7 @@ def start_api(job_param: JobParam):
         if tileset not in ogr_tiller.utils.ogr_utils.tilesets:
             return Response(status_code=404)
 
-        data = ogr_tiller.utils.ogr_utils.get_tile_json(tileset)
+        data = ogr_tiller.utils.ogr_utils.get_tile_json(tileset, job_param.port)
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -81,7 +81,14 @@ def start_api(job_param: JobParam):
 
     @app.get("/")
     async def index():
-        return "Welcome"
+        result = {
+            "styles": {
+                "starter": f'http://0.0.0.0:{job_param.port}/styles/starter.json'
+            },
+            "tilesets": [f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json' for tileset in ogr_tiller.utils.ogr_utils.tilesets]
+        }
+
+        return result
 
     uvicorn.run(app, host="0.0.0.0", port=int(job_param.port))
 

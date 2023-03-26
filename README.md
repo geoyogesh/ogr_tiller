@@ -25,3 +25,7 @@ pip install ogr_tiller -U
 ```
 ogr_tiller --cache_folder ./cache/ --data_folder ./data/
 ```
+
+```
+ogr_tiller --cache_folder ./cache/ --data_folder ./data/ --port 8000
+```

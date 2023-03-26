@@ -38,7 +38,7 @@ def format_field_type(name: str):
     return name.lower()
 
 
-def get_tile_json(tileset: str) -> Any:
+def get_tile_json(tileset: str, port: str) -> Any:
     result = {
         'tilejson': '3.0.0',
         'id': 'ogr_tiller_tileset',
@@ -47,7 +47,7 @@ def get_tile_json(tileset: str) -> Any:
         'version': '1.0.0',
         'attribution': 'UNLICENSED',
         'scheme': 'xyz',
-        'tiles': ['http://localhost:8080/tilesets/' + tileset + '/tiles/{z}/{x}/{y}.mvt'],
+        'tiles': [f'http://localhost:{port}/tilesets/' + tileset + '/tiles/{z}/{x}/{y}.mvt'],
         'minzoom': 0,
         'maxzoom': 22,
         'bounds': None,
@@ -84,7 +84,7 @@ def get_tile_json(tileset: str) -> Any:
     return result
 
 
-def get_starter_style() -> Any:
+def get_starter_style(port: str) -> Any:
     style_json = {
         'version': 8,
         'sources': {},
@@ -94,7 +94,7 @@ def get_starter_style() -> Any:
     for tileset in tilesets:
         style_json['sources'][tileset] = {
                 'type': 'vector',
-                'url': f'http://0.0.0.0:8080/tilesets/{tileset}/info/tile.json'
+                'url': f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json'
             }
 
     for tileset in tilesets:
