@@ -6,3 +6,8 @@ Serve vector tiles from local spatial data
 ```console
 pip install ogr_tiller
 ```
+
+for updating to latest release
+```console
+pip install ogr_tiller -U
+```
