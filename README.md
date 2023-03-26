@@ -3,8 +3,16 @@ Serve vector tiles from local spatial data
 
 
 # Installation
-```console
-pip install ogr_tiller
+
+Installation
+```
+conda create -n ogr_tiller -y
+conda activate ogr_tiller
+conda config --env --add channels conda-forge
+conda config --env --set channel_priority strict
+conda install python=3 fiona -y
+
+pip3 install ogr_tiller
 ```
 
 for updating to latest release
