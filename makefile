@@ -1,6 +1,5 @@
 build: clean
 	python3 -m pip install --upgrade --quiet setuptools wheel twine
-	python3 -m pip install -r requirements.txt
 	python3 setup.py --quiet sdist bdist_wheel
 
 publish: build
