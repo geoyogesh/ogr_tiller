@@ -1,0 +1,8 @@
+
+fastapi~=0.88.0
+uvicorn[standard]~=0.20.0
+setuptools~=65.5.1
+starlette~=0.22.0
+protobuf<=3.20.3
+parse~=1.19.0
+mercantile~=1.2.1
