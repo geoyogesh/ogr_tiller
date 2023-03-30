@@ -190,14 +190,17 @@ def get_features(tileset: str, x: int, y: int, z: int):
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             features = layer.filter(bbox=bbox)
             for feat in features:
+                processed_geom = clip_by_rect(
+                    shape(feat.geometry),
+                    bbox[0],
+                    bbox[1],
+                    bbox[2],
+                    bbox[3],
+                )
+                if z < 13:
+                    processed_geom = processed_geom.simplify(0.00005, False)
                 processed_features.append({
-                    "geometry": clip_by_rect(
-                        shape(feat.geometry),
-                        bbox[0],
-                        bbox[1],
-                        bbox[2],
-                        bbox[3],
-                    ),
+                    "geometry": processed_geom,
                     "properties": feat.properties
                 })
         result.append((layer_name, processed_features))
