@@ -125,8 +125,8 @@ def get_starter_style(port: str) -> Any:
     geometry_order = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon', 'Unknown']
     layer_index = 0
     for orderGeometry in geometry_order:
-        color = get_color(layer_index)
         for tileset, layer_name, geometryType in layer_geometry_types:
+            color = get_color(layer_index)
             if orderGeometry == geometryType:
                 if geometryType == 'Unknown':
                     for g in ['Point', 'LineString', 'Polygon']:
