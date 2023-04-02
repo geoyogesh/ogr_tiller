@@ -76,7 +76,7 @@ def get_tile_json(tileset: str, port: str) -> Any:
                 if result['bounds'] is None:
                     result['bounds'] = [minx, miny, maxx, maxy]
                 else:
-                    existing_bbox = box(result['bounds'][0],result['bounds'][1],result['bounds'][2],result['bounds'][3])
+                    existing_bbox = box(*result['bounds'])
                     minx_new, miny_new, maxx_new, maxy_new = existing_bbox.union(box(minx, miny, maxx, maxy)).bounds
                     result['bounds'] = [minx_new, miny_new, maxx_new, maxy_new]
             except:
@@ -200,8 +200,7 @@ def get_color(i: int):
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
 
 
-@abort_after(1)
-def get_features(tileset: str, x: int, y: int, z: int):
+def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     bbox_bounds = mercantile.bounds(x, y, z)
     bbox = (bbox_bounds.west, bbox_bounds.south, bbox_bounds.east, bbox_bounds.north)
 
@@ -236,4 +235,8 @@ def get_features(tileset: str, x: int, y: int, z: int):
                 })
         result.append((layer_name, processed_features))
     return result, srid
+
+@abort_after(1)
+def get_features(tileset: str, x: int, y: int, z: int):
+    get_features_no_abort(tileset, x, y, z)
     

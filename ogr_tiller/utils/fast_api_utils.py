@@ -30,9 +30,13 @@ def abort_after(max_execution_time):
 
 
 def timeout_response() -> JSONResponse:
+    headers = {
+        "Cache-Control": 'no-cache, no-store'
+    }
     return JSONResponse(
         {
             'detail': 'Request processing time excedeed limit',
         },
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+        headers=headers
     )

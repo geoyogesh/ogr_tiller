@@ -18,7 +18,6 @@ def update_cache(tileset: str, x: int, y: int, z: int, data: Any):
         '''
         conn.execute(sql, (tileset, x, y, z, data))
         conn.commit()
-        print(sqlite3.version)
     except Error as e:
         print(e)
     finally:
@@ -49,7 +48,12 @@ def read_cache(tileset: str, x: int, y: int, z: int):
             conn.close()
 
 
-def setup_cache(cache_folder):
+def cleanup_mbtile_cache(cache_folder):
+    db_file = os.path.join(cache_folder, 'cache.mbtiles')
+    if os.path.isfile(db_file):
+        os.remove(db_file)
+
+def setup_mbtile_cache(cache_folder):
     global cache_location, db_file
 
     # update global variablea
@@ -72,7 +76,6 @@ def setup_cache(cache_folder):
             PRIMARY KEY (tileset, x, y, z)
         );
         ''')
-        print(sqlite3.version)
     except Error as e:
         print(e)
     finally:

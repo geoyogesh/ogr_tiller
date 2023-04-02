@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from ogr_tiller.utils.ogr_utils import get_starter_style, get_tile_json, get_features, get_tilesets
+from ogr_tiller.utils.ogr_utils import get_features_no_abort, get_starter_style, get_tile_json, get_features, get_tilesets
 from ogr_tiller.poco.job_param import JobParam
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
@@ -7,16 +7,24 @@ from starlette.responses import Response
 from ogr_tiller.utils.ogr_utils import setup_ogr_cache
 from ogr_tiller.utils.fast_api_utils import TimeOutException, timeout_response
 
-from ogr_tiller.utils.sqlite_utils import read_cache, setup_cache, update_cache
+from ogr_tiller.utils.sqlite_utils import cleanup_mbtile_cache, read_cache, setup_mbtile_cache, update_cache
 import ogr_tiller.utils.tile_utils as tile_utils
 import json
+from supermercado import edge_finder, uniontiles, burntiles, super_utils
+from shapely.geometry import box, shape, mapping
+from multiprocessing.pool import ThreadPool as Pool
+import multiprocessing
 
 
-def start_api(job_param: JobParam):
+def common(job_param: JobParam):
     # setup mbtile cache
     if not job_param.disable_caching:
-        setup_cache(job_param.cache_folder)
+        setup_mbtile_cache(job_param.cache_folder)
     setup_ogr_cache(job_param.data_folder)
+
+def start_api(job_param: JobParam):
+    # setup mbtile cache 
+    common(job_param)
 
     app = FastAPI()
     app.add_middleware(
@@ -52,23 +60,26 @@ def start_api(job_param: JobParam):
     async def get_tile(tileset: str, z: int, x: int, y: int):
         if tileset not in get_tilesets():
             return Response(status_code=404)
+        
+        headers = {
+            "content-type": "application/vnd.mapbox-vector-tile",
+            "Cache-Control": 'no-cache, no-store'
+        }
 
-        if not job_param.disable_caching:
+        if job_param.mode == 'serve_cache' or not job_param.disable_caching:
             cached_data = read_cache(tileset, x, y, z)
             if cached_data is not None:
-                headers = {
-                    "content-type": "application/vnd.mapbox-vector-tile",
-                    "Cache-Control": 'no-cache, no-store'
-                }
                 return Response(content=cached_data, headers=headers)
 
-        
+        # tile not found return 404 directly 
+        if job_param.mode == 'serve_cache':
+            return Response(status_code=404, headers=headers)
 
         data = None
         try:
             layer_features, srid = get_features(tileset, x, y, z)
             if len(layer_features) == 0:
-                return Response(status_code=404)
+                return Response(status_code=404, headers=headers)
             
             
             data = tile_utils.get_tile(layer_features, x, y, z, srid)
@@ -78,11 +89,6 @@ def start_api(job_param: JobParam):
         # update cache
         if not job_param.disable_caching:
             update_cache(tileset, x, y, z, data)
-
-        headers = {
-            "content-type": "application/vnd.mapbox-vector-tile",
-            "Cache-Control": 'no-cache, no-store'
-        }
         return Response(content=data, headers=headers)
 
     @app.get("/")
@@ -103,10 +109,63 @@ def start_api(job_param: JobParam):
     uvicorn.run(app, host="0.0.0.0", port=int(job_param.port))
 
 
+def build_cache(job_param: JobParam):
+    # cleanup existing mbtile cache
+    cleanup_mbtile_cache(job_param.cache_folder)
+    # setup mbtile cache 
+    common(job_param)
+
+    tilesets = get_tilesets()
+    for tileset in tilesets:
+        tilejson = get_tile_json(tileset, job_param.port)
+        bbox = box(*tilejson['bounds'])
+        fc = {
+            "features": [{"type": "Feature", "geometry": a} for a in [mapping(b) for b in [bbox]]]
+        }
+        features = [f for f in super_utils.filter_features(fc["features"])]
+        tiles = []
+        for zoom in range(1, 10):
+            tiles.extend(burntiles.burn(features, zoom))
+        def process_tile(tile):
+            x, y, z = tile
+            try:
+                layer_features, srid = get_features_no_abort(tileset, x, y, z)
+                if len(layer_features) == 0:
+                    return
+                data = tile_utils.get_tile_no_abort(layer_features, x, y, z, srid)
+                update_cache(tileset, x, y, z, data)
+            except Exception:
+                print(f'error generating tile for {(x, y, z)}')
+
+        with Pool(multiprocessing.cpu_count() - 1) as p:
+            p.map(process_tile, tiles)
+
+
+
+def start_tiller_process(job_param: JobParam):
+    print('started...')
+    print('mode:', job_param.mode)
+    print('data_folder:', job_param.data_folder)
+    print('cache_folder:', job_param.cache_folder)
+    print('port:', job_param.port)
+
+    if job_param.mode == 'serve' or job_param.mode == 'serve_cache':
+        print('Web UI started')
+        start_api(job_param)
+        print('Web UI stopped')
+    elif job_param.mode == 'build_cache':
+        # job to build cache
+        print('started...')
+        build_cache(job_param)
+        print('completed...')
+    print('completed')
+    
+    
+
 if __name__ == "__main__":
     data_folder = './data/'
     cache_folder = './cache/'
     port = '8080'
     disable_caching = True
-    job_param = JobParam(data_folder, cache_folder, port, disable_caching)
-    start_api(job_param)
+    job_param = JobParam('serve', data_folder, cache_folder, port, disable_caching)
+    start_tiller_process(job_param)
