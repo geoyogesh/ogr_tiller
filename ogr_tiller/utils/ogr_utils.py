@@ -125,14 +125,17 @@ def get_starter_style(port: str) -> Any:
     layer_index = 0
     for orderGeometry in geometry_order:
         for tileset, layer_name, geometryType in layer_geometry_types:
-            color = get_color(layer_index)
             if orderGeometry == geometryType:
+                # getting color for layer
+                color = get_color(layer_index)
+                layer_index += 1
+                
                 if geometryType == 'Unknown':
                     for g in ['Point', 'LineString', 'Polygon']:
                         style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', layer_name, g))
                 else:
                     style_json['layers'].append(get_layer_style(tileset, color, layer_name, layer_name, orderGeometry))
-            layer_index += 1
+            
     
     return style_json
 
