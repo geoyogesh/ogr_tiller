@@ -4,7 +4,7 @@ conda create -n ogr_tiller
 conda activate ogr_tiller
 conda config --env --add channels conda-forge
 conda config --env --set channel_priority strict
-conda install python=3 fiona mapbox-vector-tile rtree mapbox-vector-tile[proj] mercantile -y
+conda install python=3 fiona mapbox-vector-tile rtree mapbox-vector-tile[proj] mercantile pyproj -y
 conda install -y fastapi uvicorn 
 ```
 

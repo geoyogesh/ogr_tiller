@@ -62,13 +62,16 @@ def start_api(job_param: JobParam):
                 }
                 return Response(content=cached_data, headers=headers)
 
-        layer_features = get_features(tileset, x, y, z)
-        if len(layer_features) == 0:
-            return Response(status_code=404)
+        
 
         data = None
         try:
-            data = tile_utils.get_tile(layer_features, x, y, z)
+            layer_features, srid = get_features(tileset, x, y, z)
+            if len(layer_features) == 0:
+                return Response(status_code=404)
+            
+            
+            data = tile_utils.get_tile(layer_features, x, y, z, srid)
         except TimeOutException:
             return timeout_response()
 
