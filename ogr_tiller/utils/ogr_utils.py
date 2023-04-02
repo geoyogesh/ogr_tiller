@@ -113,9 +113,9 @@ def get_starter_style(port: str) -> Any:
             'url': f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json'
         }
 
+    layer_geometry_types = []
     for tileset in cached_tileset_names:
         ds_path = os.path.join(data_location, f'{tileset}.gpkg')
-        layer_geometry_types = []
         layers = fiona.listlayers(ds_path)
         for layer_name in layers:
             with fiona.open(ds_path, 'r', layer=layer_name) as layer:
