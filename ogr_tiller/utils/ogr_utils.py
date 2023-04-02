@@ -8,8 +8,6 @@ import os
 from shapely.ops import clip_by_rect
 from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
-from multiprocessing.pool import ThreadPool as Pool
-import multiprocessing
 
 data_location = None
 cached_tileset_names = None
@@ -206,14 +204,11 @@ def get_features(tileset: str, x: int, y: int, z: int):
 
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
     layers = fiona.listlayers(ds_path)
-
-    inputs = [(layer, bbox) for layer in layers]
     result = []
 
     srid = None
 
-    def process_layer_features(input):
-        layer_name, bbox = input
+    for layer_name in layers:
         processed_features = []
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             srid = layer.crs
@@ -236,13 +231,6 @@ def get_features(tileset: str, x: int, y: int, z: int):
                     "geometry": processed_geom,
                     "properties": feat.properties
                 })
-        return (layer_name, processed_features, srid)
-    
-    with Pool(multiprocessing.cpu_count() - 1) as pool:
-        items = pool.map(process_layer_features, inputs) 
-        for item in items:
-            result.append((item[0],item[1]))
-            srid = item[2]
-
+        result.append((layer_name, processed_features))
     return result, srid
     
