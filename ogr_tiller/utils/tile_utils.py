@@ -2,7 +2,8 @@ from typing import Any, List, Tuple
 import mercantile
 import mapbox_vector_tile
 from ogr_tiller.utils.fast_api_utils import abort_after
-from pyproj import Transformer
+from ogr_tiller.utils.proj_utils import get_bbox_for_crs
+
 
 @abort_after(1)
 def get_tile(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str):
@@ -10,10 +11,7 @@ def get_tile(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid
     bbox = (bbox_bounds.west, bbox_bounds.south, bbox_bounds.east, bbox_bounds.north)
     
     if srid != 'EPSG:4326':
-        transformer = Transformer.from_crs("EPSG:4326", srid, always_xy=True)
-        xmin, ymin = transformer.transform(bbox[0], bbox[1])
-        xmax, ymax = transformer.transform(bbox[2], bbox[3])
-        bbox = (xmin, ymin, xmax, ymax)
+        bbox = get_bbox_for_crs("EPSG:4326", srid, bbox)
     
     
     result = b''

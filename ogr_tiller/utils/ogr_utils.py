@@ -7,7 +7,7 @@ import random
 import os
 from shapely.ops import clip_by_rect
 from ogr_tiller.utils.fast_api_utils import abort_after
-from pyproj import Transformer
+from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 
 
 data_location = None
@@ -92,12 +92,12 @@ def get_tile_json(tileset: str, port: str) -> Any:
 
     # reproject bounds
     if result['crs'] != 'EPSG:4326' and result['bounds'] is not None:
-        transformer = Transformer.from_crs(result['crs'], 'EPSG:4326', always_xy=True)
-        xmin, ymin = transformer.transform(result['bounds'][0], result['bounds'][1])
-        xmax, ymax = transformer.transform(result['bounds'][2], result['bounds'][3])
-        result['bounds'] = (xmin, ymin, xmax, ymax)
+        bounds = get_bbox_for_crs(result['crs'], 'EPSG:4326', result['bounds'])
+        result['bounds'] = bounds
+        result['center'] = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
+    else:
+        result['center'] = None
 
-    result['center'] = None if result['bounds'] is None else [(result['bounds'][0] + result['bounds'][2]) / 2, (result['bounds'][1] + result['bounds'][3]) / 2]
     return result
 
 
@@ -133,7 +133,7 @@ def get_starter_style(port: str) -> Any:
                         style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', layer_name, g))
                 else:
                     style_json['layers'].append(get_layer_style(tileset, color, layer_name, layer_name, orderGeometry))
-        layer_index += 1
+            layer_index += 1
     
     return style_json
 
@@ -215,10 +215,7 @@ def get_features(tileset: str, x: int, y: int, z: int):
             srid = layer.crs
 
             if srid != 'EPSG:4326':
-                transformer = Transformer.from_crs("EPSG:4326", srid, always_xy=True)
-                xmin, ymin = transformer.transform(bbox[0], bbox[1])
-                xmax, ymax = transformer.transform(bbox[2], bbox[3])
-                bbox = (xmin, ymin, xmax, ymax)
+                bbox = get_bbox_for_crs("EPSG:4326", srid, bbox)
 
             features = layer.filter(bbox=bbox)
             for feat in features:
