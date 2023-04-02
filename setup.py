@@ -21,6 +21,7 @@ setup(name='ogr_tiller',
       long_description_content_type='text/markdown',
       zip_safe=False,
       classifiers=CLASSIFIERS,
-      install_requires=["fastapi", "uvicorn[standard]", "protobuf", "parse", "mercantile", "fiona", "pyproj",
+      install_requires=["fastapi", "uvicorn[standard]", "protobuf", "parse", 
+                        "mercantile", "fiona", "pyproj", "supermercado",
                         "mapbox_vector_tile>=2.0.1"]
       )
