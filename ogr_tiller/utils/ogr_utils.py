@@ -119,21 +119,21 @@ def get_starter_style(port: str) -> Any:
             if orderGeometry == geometryType:
                 if geometryType == 'Unknown':
                     for g in ['Point', 'LineString', 'Polygon']:
-                        style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', g))
+                        style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', layer_name, g))
                 else:
-                    style_json['layers'].append(get_layer_style(tileset, color, layer_name, orderGeometry))
+                    style_json['layers'].append(get_layer_style(tileset, color, layer_name, layer_name, orderGeometry))
         layer_index += 1
     
     return style_json
 
 
-def get_layer_style(tileset: str, color: str, layer_name: str, geometry_type: str) -> Any:
+def get_layer_style(tileset: str, color: str, layer_name: str, source_layer: str, geometry_type: str) -> Any:
     if geometry_type == 'LineString' or geometry_type == 'MultiLineString':
         return {
             'id': layer_name,
             'type': 'line',
             'source': tileset,
-            'source-layer': layer_name,
+            'source-layer': source_layer,
             'filter': ["==", "$type", "LineString"],
             'layout': {
                 'line-join': 'round',
@@ -150,7 +150,7 @@ def get_layer_style(tileset: str, color: str, layer_name: str, geometry_type: st
             'id': layer_name,
             'type': 'line',
             'source': tileset,
-            'source-layer': layer_name,
+            'source-layer': source_layer,
             'filter': ["==", "$type", "Polygon"],
             'layout': {
                 'line-join': 'round',
@@ -167,7 +167,7 @@ def get_layer_style(tileset: str, color: str, layer_name: str, geometry_type: st
             'id': layer_name,
             'type': 'circle',
             'source': tileset,
-            'source-layer': layer_name,
+            'source-layer': source_layer,
             'filter': ["==", "$type", "Point"],
             'paint': {
                 'circle-color': color,
