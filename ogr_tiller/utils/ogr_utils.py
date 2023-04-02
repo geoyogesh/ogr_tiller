@@ -111,13 +111,17 @@ def get_starter_style(port: str) -> Any:
             with fiona.open(ds_path, 'r', layer=layer_name) as layer:
                 layer_geometry_types.append((tileset, layer_name, layer.schema['geometry']))
 
-    geometry_order = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']
+    geometry_order = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon', 'UnKnown']
     layer_index = 0
     for orderGeometry in geometry_order:
         color = get_color(layer_index)
         for tileset, layer_name, geometryType in layer_geometry_types:
             if orderGeometry == geometryType:
-                style_json['layers'].append(get_layer_style(tileset, color, layer_name, orderGeometry))
+                if geometryType == 'UnKnown':
+                    for g in ['Point', 'LineString', 'Polygon']:
+                        style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', g))
+                else:
+                    style_json['layers'].append(get_layer_style(tileset, color, layer_name, orderGeometry))
         layer_index += 1
     
     return style_json
