@@ -6,6 +6,9 @@ from shapely.geometry import shape
 import random
 import os
 from shapely.ops import clip_by_rect
+from ogr_tiller.utils.fast_api_utils import abort_after
+from pyproj import Transformer
+
 
 data_location = None
 cached_tileset_names = None
@@ -86,6 +89,14 @@ def get_tile_json(tileset: str, port: str) -> Any:
         })
     
     result['vector_layers'] = vector_layers
+
+    # reproject bounds
+    if result['crs'] != 'EPSG:4326' and result['bounds'] is not None:
+        transformer = Transformer.from_crs(result['crs'], 'EPSG:4326', always_xy=True)
+        xmin, ymin = transformer.transform(result['bounds'][0], result['bounds'][1])
+        xmax, ymax = transformer.transform(result['bounds'][2], result['bounds'][3])
+        result['bounds'] = (xmin, ymin, xmax, ymax)
+
     result['center'] = None if result['bounds'] is None else [(result['bounds'][0] + result['bounds'][2]) / 2, (result['bounds'][1] + result['bounds'][3]) / 2]
     return result
 
@@ -99,9 +110,9 @@ def get_starter_style(port: str) -> Any:
 
     for tileset in cached_tileset_names:
         style_json['sources'][tileset] = {
-                'type': 'vector',
-                'url': f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json'
-            }
+            'type': 'vector',
+            'url': f'http://0.0.0.0:{port}/tilesets/{tileset}/info/tile.json'
+        }
 
     for tileset in cached_tileset_names:
         ds_path = os.path.join(data_location, f'{tileset}.gpkg')
@@ -187,6 +198,7 @@ def get_color(i: int):
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
 
 
+@abort_after(1)
 def get_features(tileset: str, x: int, y: int, z: int):
     bbox_bounds = mercantile.bounds(x, y, z)
     bbox = (bbox_bounds.west, bbox_bounds.south, bbox_bounds.east, bbox_bounds.north)
@@ -195,9 +207,19 @@ def get_features(tileset: str, x: int, y: int, z: int):
     layers = fiona.listlayers(ds_path)
     result = []
 
+    srid = None
+
     for layer_name in layers:
         processed_features = []
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
+            srid = layer.crs
+
+            if srid != 'EPSG:4326':
+                transformer = Transformer.from_crs("EPSG:4326", srid, always_xy=True)
+                xmin, ymin = transformer.transform(bbox[0], bbox[1])
+                xmax, ymax = transformer.transform(bbox[2], bbox[3])
+                bbox = (xmin, ymin, xmax, ymax)
+
             features = layer.filter(bbox=bbox)
             for feat in features:
                 processed_geom = clip_by_rect(
@@ -214,5 +236,5 @@ def get_features(tileset: str, x: int, y: int, z: int):
                     "properties": feat.properties
                 })
         result.append((layer_name, processed_features))
-    return result
+    return result, srid
     
