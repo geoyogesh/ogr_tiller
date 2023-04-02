@@ -59,13 +59,16 @@ def get_tile_json(tileset: str, port: str) -> Any:
     vector_layers = []
     for layer_name in layers:
         fields = {}
+        geometry_type = None
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             result['crs'] = str(layer.crs)
             result['crs_wkt'] = layer.crs_wkt
             schema = layer.schema
+            geometry_type = layer.schema['geometry']
             for field_name, field_type in schema['properties'].items():
                 fields[format_field_name(field_name)] = format_field_type(field_type)
             
+            # layer bounds cannot be computed if layer dont have any features
             try:
                 minx, miny, maxx, maxy = layer.bounds
                 if result['bounds'] is None:
@@ -78,7 +81,8 @@ def get_tile_json(tileset: str, port: str) -> Any:
                 print(f'error getting bounds for {layer_name}')
         vector_layers.append({
             'id': layer_name,
-            'fields': fields
+            'fields': fields,
+            'geometryType': geometry_type
         })
     
     result['vector_layers'] = vector_layers
