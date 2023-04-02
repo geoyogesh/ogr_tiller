@@ -66,14 +66,16 @@ def get_tile_json(tileset: str, port: str) -> Any:
             for field_name, field_type in schema['properties'].items():
                 fields[format_field_name(field_name)] = format_field_type(field_type)
             
-            minx, miny, maxx, maxy = layer.bounds
-            if result['bounds'] is None:
-                result['bounds'] = [minx, miny, maxx, maxy]
-            else:
-                existing_bbox = box(result['bounds'][0],result['bounds'][1],result['bounds'][2],result['bounds'][3])
-                minx_new, miny_new, maxx_new, maxy_new = existing_bbox.union(box(minx, miny, maxx, maxy)).bounds
-                result['bounds'] = [minx_new, miny_new, maxx_new, maxy_new]
-
+            try:
+                minx, miny, maxx, maxy = layer.bounds
+                if result['bounds'] is None:
+                    result['bounds'] = [minx, miny, maxx, maxy]
+                else:
+                    existing_bbox = box(result['bounds'][0],result['bounds'][1],result['bounds'][2],result['bounds'][3])
+                    minx_new, miny_new, maxx_new, maxy_new = existing_bbox.union(box(minx, miny, maxx, maxy)).bounds
+                    result['bounds'] = [minx_new, miny_new, maxx_new, maxy_new]
+            except:
+                print(f'error getting bounds for {layer_name}')
         vector_layers.append({
             'id': layer_name,
             'fields': fields
