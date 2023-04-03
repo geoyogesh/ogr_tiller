@@ -39,8 +39,8 @@ def tileset_manifest(tilesets):
     if os.path.isfile(manifest_path):
         with open(manifest_path, 'r') as file:
             partial_manifest = json.loads(json.dumps(yaml.safe_load(file)))
-            if partial_manifest["config"] and partial_manifest["config"]["default"]:
-                defaults = partial_manifest["config"]["default"]
+            if "config" in partial_manifest and "defaults" in partial_manifest["config"]:
+                defaults = partial_manifest["config"]["defaults"]
                 for tileset in tilesets:
                     manifest = result[tileset]
                     if 'name' in defaults and defaults['name']:
@@ -51,7 +51,7 @@ def tileset_manifest(tilesets):
                         manifest.maxzoom=defaults['maxzoom']
                     if 'attribution' in defaults and defaults['attribution']:
                         manifest.attribution=defaults['attribution']
-            if partial_manifest["config"] and partial_manifest["config"]["tilesets"]:
+            if "config" in partial_manifest and "tilesets" in partial_manifest["config"]:
                 current_config = partial_manifest["config"]["tilesets"].keys()
                 for tileset in current_config: 
                     manifest = result[tileset]
