@@ -30,7 +30,7 @@ def tileset_manifest(tilesets):
         manifest = TilesetManifest(
             name=tileset,
             minzoom=0,
-            maxzoom=22,
+            maxzoom=24,
             attribution='UNLICENSED'
         )
         result[tileset] = manifest
@@ -51,7 +51,7 @@ def tileset_manifest(tilesets):
                         manifest.maxzoom=defaults['maxzoom']
                     if 'attribution' in defaults and defaults['attribution']:
                         manifest.attribution=defaults['attribution']
-            if "config" in partial_manifest and "tilesets" in partial_manifest["config"]:
+            if "config" in partial_manifest and "tilesets" in partial_manifest["config"] and type(partial_manifest["config"]["tilesets"]) is dict:
                 current_config = partial_manifest["config"]["tilesets"].keys()
                 for tileset in current_config: 
                     manifest = result[tileset]
