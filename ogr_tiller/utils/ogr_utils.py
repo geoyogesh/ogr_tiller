@@ -94,9 +94,9 @@ def format_field_type(name: str):
 def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) -> Any:
     result = {
         'tilejson': '3.0.0',
-        'id': 'ogr_tiller_tileset',
-        'name': 'ogr_tiller_tileset',
-        'description': 'OGR Tiller Tileset',
+        'id': tileset_manifest.name,
+        'name': tileset_manifest.name,
+        'description': tileset_manifest.name,
         'version': '1.0.0',
         'attribution': tileset_manifest.attribution,
         'scheme': 'xyz',
