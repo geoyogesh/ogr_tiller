@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from ogr_tiller.utils.ogr_utils import get_features_no_abort, get_starter_style, get_tile_json, get_features, get_tilesets
+from ogr_tiller.utils.ogr_utils import get_features_no_abort, get_starter_style, get_tile_json, get_features, get_tileset_manifest, get_tilesets
 from ogr_tiller.poco.job_param import JobParam
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
@@ -49,7 +49,7 @@ def start_api(job_param: JobParam):
         if tileset not in get_tilesets():
             return Response(status_code=404)
 
-        data = get_tile_json(tileset, job_param.port)
+        data = get_tile_json(tileset, job_param.port, get_tileset_manifest()[tileset])
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
@@ -117,14 +117,14 @@ def build_cache(job_param: JobParam):
 
     tilesets = get_tilesets()
     for tileset in tilesets:
-        tilejson = get_tile_json(tileset, job_param.port)
+        tilejson = get_tile_json(tileset, job_param.port, get_tileset_manifest()[tileset])
         bbox = box(*tilejson['bounds'])
         fc = {
             "features": [{"type": "Feature", "geometry": a} for a in [mapping(b) for b in [bbox]]]
         }
         features = [f for f in super_utils.filter_features(fc["features"])]
         tiles = []
-        for zoom in range(0, 10):
+        for zoom in range(tilejson['minzoom'], tilejson['maxzoom'] + 1):
             tiles.extend(burntiles.burn(features, zoom))
         def process_tile(tile):
             x, y, z = tile
