@@ -25,4 +25,4 @@ def get_tile_no_abort(layer_features: Tuple[str, List[Any]], x: int, y: int, z: 
 
 @abort_after(1)
 def get_tile(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str):
-    get_tile_no_abort(layer_features, x, y, z, srid)
+    return get_tile_no_abort(layer_features, x, y, z, srid)
