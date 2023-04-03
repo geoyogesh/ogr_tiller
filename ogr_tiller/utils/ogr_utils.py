@@ -6,26 +6,77 @@ from shapely.geometry import shape
 import random
 import os
 from shapely.ops import clip_by_rect
+from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
+import yaml
+import json 
 
 data_location = None
 cached_tileset_names = None
+cached_tileset_manifest = None
 
 
 def get_tilesets():
     return cached_tileset_names
 
+def get_tileset_manifest():
+    return cached_tileset_manifest
+
+
+def tileset_manifest(tilesets):
+    result = {}
+    for tileset in tilesets:
+        manifest = TilesetManifest(
+            name=tileset,
+            minzoom=0,
+            maxzoom=22,
+            attribution='UNLICENSED'
+        )
+        result[tileset] = manifest
+
+    manifest_path = os.path.join(data_location, 'manifest.yml')
+    if os.path.isfile(manifest_path):
+        with open(manifest_path, 'r') as file:
+            partial_manifest = json.loads(json.dumps(yaml.safe_load(file)))
+            if partial_manifest["config"] and partial_manifest["config"]["default"]:
+                defaults = partial_manifest["config"]["default"]
+                for tileset in tilesets:
+                    manifest = result[tileset]
+                    if 'name' in defaults and defaults['name']:
+                        manifest.name=defaults['name']
+                    if 'minzoom' in defaults and defaults['minzoom']:
+                        manifest.minzoom=defaults['minzoom']
+                    if 'maxzoom' in defaults and defaults['maxzoom']:
+                        manifest.maxzoom=defaults['maxzoom']
+                    if 'attribution' in defaults and defaults['attribution']:
+                        manifest.attribution=defaults['attribution']
+            if partial_manifest["config"] and partial_manifest["config"]["tilesets"]:
+                current_config = partial_manifest["config"]["tilesets"].keys()
+                for tileset in current_config: 
+                    manifest = result[tileset]
+                    if 'name' in defaults and defaults['name']:
+                        manifest.name=defaults['name']
+                    if 'minzoom' in defaults and defaults['minzoom']:
+                        manifest.minzoom=defaults['minzoom']
+                    if 'maxzoom' in defaults and defaults['maxzoom']:
+                        manifest.maxzoom=defaults['maxzoom']
+                    if 'attribution' in defaults and defaults['attribution']:
+                        manifest.attribution=defaults['attribution']
+            
+
+    return result
 
 def setup_ogr_cache(data_folder):
     # update global variablea
-    global data_location, cached_tileset_names
+    global data_location, cached_tileset_names, cached_tileset_manifest
     data_location = data_folder
     cached_tileset_names = []
     dir_list = os.listdir(data_location)
     for file in dir_list:
         if file.endswith('.gpkg'):
             cached_tileset_names.append(file.split('.')[0])
+    cached_tileset_manifest = tileset_manifest(cached_tileset_names)
 
 
 def format_layer_name(name: str):
@@ -40,18 +91,18 @@ def format_field_type(name: str):
     return name.lower()
 
 
-def get_tile_json(tileset: str, port: str) -> Any:
+def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) -> Any:
     result = {
         'tilejson': '3.0.0',
         'id': 'ogr_tiller_tileset',
         'name': 'ogr_tiller_tileset',
         'description': 'OGR Tiller Tileset',
         'version': '1.0.0',
-        'attribution': 'UNLICENSED',
+        'attribution': tileset_manifest.attribution,
         'scheme': 'xyz',
         'tiles': [f'http://localhost:{port}/tilesets/' + tileset + '/tiles/{z}/{x}/{y}.mvt'],
-        'minzoom': 0,
-        'maxzoom': 22,
+        'minzoom': tileset_manifest.minzoom,
+        'maxzoom': tileset_manifest.maxzoom,
         'bounds': None,
         'center': None
     }
