@@ -124,7 +124,7 @@ def build_cache(job_param: JobParam):
         }
         features = [f for f in super_utils.filter_features(fc["features"])]
         tiles = []
-        for zoom in range(1, 10):
+        for zoom in range(0, 10):
             tiles.extend(burntiles.burn(features, zoom))
         def process_tile(tile):
             x, y, z = tile
