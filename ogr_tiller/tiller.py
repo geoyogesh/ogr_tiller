@@ -128,6 +128,9 @@ def build_cache(job_param: JobParam):
             tiles.extend(burntiles.burn(features, zoom))
         def process_tile(tile):
             x, y, z = tile
+            x = x.item()
+            y = y.item()
+            z = z.item()
             try:
                 layer_features, srid = get_features_no_abort(tileset, x, y, z)
                 if len(layer_features) == 0:

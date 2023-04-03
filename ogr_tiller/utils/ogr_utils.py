@@ -238,5 +238,5 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
 
 @abort_after(1)
 def get_features(tileset: str, x: int, y: int, z: int):
-    get_features_no_abort(tileset, x, y, z)
+    return get_features_no_abort(tileset, x, y, z)
     
