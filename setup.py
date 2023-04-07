@@ -9,7 +9,7 @@ CLASSIFIERS = [
 ]
 
 setup(name='ogr_tiller',
-      version='0.0.33',
+      version='0.0.34',
       url='https://github.com/geoyogesh/ogr_tiller',
       license='GNU-GPL',
       author='Yogesh Dhanapal',
@@ -22,6 +22,6 @@ setup(name='ogr_tiller',
       zip_safe=False,
       classifiers=CLASSIFIERS,
       install_requires=["fastapi", "uvicorn[standard]", "protobuf", "parse", 
-                        "mercantile", "fiona", "pyproj", "supermercado", "pyyaml",
+                        "morecantile", "fiona", "pyproj", "supermercado", "pyyaml",
                         "mapbox_vector_tile>=2.0.1"]
       )
