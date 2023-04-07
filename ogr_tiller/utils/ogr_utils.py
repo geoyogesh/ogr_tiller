@@ -295,7 +295,7 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
         result.append((layer_name, processed_features))
     return result, srid
 
-@abort_after(1)
+@abort_after(3)
 def get_features(tileset: str, x: int, y: int, z: int):
     return get_features_no_abort(tileset, x, y, z)
     
