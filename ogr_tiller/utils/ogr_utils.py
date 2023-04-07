@@ -1,6 +1,5 @@
 from typing import Any
 import fiona
-import mercantile
 from shapely.geometry import box
 from shapely.geometry import shape
 import random
@@ -11,6 +10,9 @@ from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 import yaml
 import json 
+import morecantile
+
+tms = morecantile.tms.get("WebMercatorQuad")
 
 data_location = None
 cached_tileset_names = None
@@ -252,8 +254,17 @@ def get_color(i: int):
 
 
 def get_features_no_abort(tileset: str, x: int, y: int, z: int):
-    bbox_bounds = mercantile.bounds(x, y, z)
-    bbox = (bbox_bounds.west, bbox_bounds.south, bbox_bounds.east, bbox_bounds.north)
+    bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
+    bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
+
+    ## buffer to vertor tile
+    clip_bbox = shape(box(*bbox))
+    buffer_distance = 128 #64
+    if z >= 15 and z <= 17:
+        buffer_distance = 128
+    elif z > 17:
+        buffer_distance = 256
+    clip_bbox = clip_bbox.buffer(buffer_distance).bounds
 
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
     layers = fiona.listlayers(ds_path)
@@ -265,18 +276,15 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
         processed_features = []
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             srid = layer.crs
+            if srid != 'EPSG:3857':
+                bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
 
-            if srid != 'EPSG:4326':
-                bbox = get_bbox_for_crs("EPSG:4326", srid, bbox)
 
             features = layer.filter(bbox=bbox)
             for feat in features:
                 processed_geom = clip_by_rect(
                     shape(feat.geometry),
-                    bbox[0],
-                    bbox[1],
-                    bbox[2],
-                    bbox[3],
+                    *clip_bbox,
                 )
                 if z < 13:
                     processed_geom = processed_geom.simplify(0.00005, False)
