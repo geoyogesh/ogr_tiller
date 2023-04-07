@@ -3,7 +3,6 @@ import mapbox_vector_tile
 from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 import morecantile
-import pyproj
 
 tms = morecantile.tms.get("WebMercatorQuad")
 

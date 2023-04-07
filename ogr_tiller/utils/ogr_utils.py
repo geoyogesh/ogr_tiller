@@ -33,7 +33,9 @@ def tileset_manifest(tilesets):
             name=tileset,
             minzoom=0,
             maxzoom=24,
-            attribution='UNLICENSED'
+            attribution='UNLICENSED',
+            tile_buffer=256,
+            simplify_tolerance=1
         )
         result[tileset] = manifest
 
@@ -53,6 +55,10 @@ def tileset_manifest(tilesets):
                         manifest.maxzoom=defaults['maxzoom']
                     if 'attribution' in defaults and defaults['attribution']:
                         manifest.attribution=defaults['attribution']
+                    if 'tile_buffer' in defaults and defaults['tile_buffer']:
+                        manifest.tile_buffer=defaults['tile_buffer']
+                    if 'simplify_tolerance' in defaults and defaults['simplify_tolerance']:
+                        manifest.simplify_tolerance=defaults['simplify_tolerance']
             if "config" in partial_manifest and "tilesets" in partial_manifest["config"] and type(partial_manifest["config"]["tilesets"]) is dict:
                 current_config = partial_manifest["config"]["tilesets"].keys()
                 for tileset in current_config: 
@@ -256,15 +262,12 @@ def get_color(i: int):
 def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
+    
+    manifest: TilesetManifest = get_tileset_manifest()[tileset]
 
     ## buffer to vertor tile
     clip_bbox = shape(box(*bbox))
-    buffer_distance = 128 #64
-    if z >= 15 and z <= 17:
-        buffer_distance = 128
-    elif z > 17:
-        buffer_distance = 256
-    clip_bbox = clip_bbox.buffer(buffer_distance).bounds
+    clip_bbox = clip_bbox.buffer(manifest.tile_buffer).bounds
 
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
     layers = fiona.listlayers(ds_path)
@@ -286,8 +289,7 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
                     shape(feat.geometry),
                     *clip_bbox,
                 )
-                if z < 13:
-                    processed_geom = processed_geom.simplify(0.00005, False)
+                processed_geom = processed_geom.simplify(manifest.simplify_tolerance, False)
                 processed_features.append({
                     "geometry": processed_geom,
                     "properties": feat.properties
