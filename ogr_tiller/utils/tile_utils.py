@@ -7,7 +7,7 @@ import morecantile
 tms = morecantile.tms.get("WebMercatorQuad")
 
 
-def get_tile_no_abort(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str):
+def get_tile_no_abort(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str, extent: int):
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
 
@@ -21,10 +21,10 @@ def get_tile_no_abort(layer_features: Tuple[str, List[Any]], x: int, y: int, z: 
                 "name": layer_name,
                 "features": features
             }
-        ], default_options={'quantize_bounds': bbox})
+        ], default_options={'quantize_bounds': bbox, 'extents':extent})
         result += tile
     return result
 
 @abort_after(3)
-def get_tile(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str):
-    return get_tile_no_abort(layer_features, x, y, z, srid)
+def get_tile(layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, srid: str, extent: int):
+    return get_tile_no_abort(layer_features, x, y, z, srid, extent)

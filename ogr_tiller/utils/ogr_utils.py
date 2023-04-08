@@ -34,8 +34,9 @@ def tileset_manifest(tilesets):
             minzoom=0,
             maxzoom=24,
             attribution='UNLICENSED',
+            extent=4096,
             tile_buffer=256,
-            simplify_tolerance=1
+            simplify_tolerance=0.00005
         )
         result[tileset] = manifest
 
@@ -59,6 +60,8 @@ def tileset_manifest(tilesets):
                         manifest.tile_buffer=defaults['tile_buffer']
                     if 'simplify_tolerance' in defaults and defaults['simplify_tolerance']:
                         manifest.simplify_tolerance=defaults['simplify_tolerance']
+                    if 'extent' in defaults and defaults['extent']:
+                        manifest.extent=defaults['extent']
             if "config" in partial_manifest and "tilesets" in partial_manifest["config"] and type(partial_manifest["config"]["tilesets"]) is dict:
                 current_config = partial_manifest["config"]["tilesets"].keys()
                 for tileset in current_config: 
@@ -262,7 +265,7 @@ def get_color(i: int):
 def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
-    
+
     manifest: TilesetManifest = get_tileset_manifest()[tileset]
 
     ## buffer to vertor tile
