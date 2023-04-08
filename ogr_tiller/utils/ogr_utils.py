@@ -35,7 +35,7 @@ def tileset_manifest(tilesets):
             maxzoom=24,
             attribution='UNLICENSED',
             extent=4096,
-            tile_buffer=256,
+            tile_buffer=64,
             simplify_tolerance=0.00005
         )
         result[tileset] = manifest
@@ -262,6 +262,15 @@ def get_color(i: int):
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
 
 
+def buffered_bbox(bbox, extent: int, buffer: int):
+    width = abs(bbox[0] - bbox[2])
+    height = abs(bbox[1] - bbox[3])
+    distance_meters = max([width, height])
+    buffer_distance = (buffer/extent) * distance_meters
+    clip_bbox = shape(box(*bbox))
+    clip_bbox = clip_bbox.buffer(buffer_distance).bounds
+    return clip_bbox
+
 def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
@@ -269,8 +278,7 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     manifest: TilesetManifest = get_tileset_manifest()[tileset]
 
     ## buffer to vertor tile
-    clip_bbox = shape(box(*bbox))
-    clip_bbox = clip_bbox.buffer(manifest.tile_buffer).bounds
+    clip_bbox = buffered_bbox(bbox, manifest.extent, manifest.tile_buffer)
 
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
     layers = fiona.listlayers(ds_path)
