@@ -9,7 +9,7 @@ from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 import yaml
-import json 
+import json
 import morecantile
 
 tms = morecantile.tms.get("WebMercatorQuad")
@@ -21,6 +21,7 @@ cached_tileset_manifest = None
 
 def get_tilesets():
     return cached_tileset_names
+
 
 def get_tileset_manifest():
     return cached_tileset_manifest
@@ -49,34 +50,34 @@ def tileset_manifest(tilesets):
                 for tileset in tilesets:
                     manifest = result[tileset]
                     if 'name' in defaults and defaults['name']:
-                        manifest.name=defaults['name']
+                        manifest.name = defaults['name']
                     if 'minzoom' in defaults and defaults['minzoom']:
-                        manifest.minzoom=defaults['minzoom']
+                        manifest.minzoom = defaults['minzoom']
                     if 'maxzoom' in defaults and defaults['maxzoom']:
-                        manifest.maxzoom=defaults['maxzoom']
+                        manifest.maxzoom = defaults['maxzoom']
                     if 'attribution' in defaults and defaults['attribution']:
-                        manifest.attribution=defaults['attribution']
+                        manifest.attribution = defaults['attribution']
                     if 'tile_buffer' in defaults and defaults['tile_buffer']:
-                        manifest.tile_buffer=defaults['tile_buffer']
+                        manifest.tile_buffer = defaults['tile_buffer']
                     if 'simplify_tolerance' in defaults and defaults['simplify_tolerance']:
-                        manifest.simplify_tolerance=defaults['simplify_tolerance']
+                        manifest.simplify_tolerance = defaults['simplify_tolerance']
                     if 'extent' in defaults and defaults['extent']:
-                        manifest.extent=defaults['extent']
+                        manifest.extent = defaults['extent']
             if "config" in partial_manifest and "tilesets" in partial_manifest["config"] and type(partial_manifest["config"]["tilesets"]) is dict:
                 current_config = partial_manifest["config"]["tilesets"].keys()
-                for tileset in current_config: 
+                for tileset in current_config:
                     manifest = result[tileset]
                     if 'name' in defaults and defaults['name']:
-                        manifest.name=defaults['name']
+                        manifest.name = defaults['name']
                     if 'minzoom' in defaults and defaults['minzoom']:
-                        manifest.minzoom=defaults['minzoom']
+                        manifest.minzoom = defaults['minzoom']
                     if 'maxzoom' in defaults and defaults['maxzoom']:
-                        manifest.maxzoom=defaults['maxzoom']
+                        manifest.maxzoom = defaults['maxzoom']
                     if 'attribution' in defaults and defaults['attribution']:
-                        manifest.attribution=defaults['attribution']
-            
+                        manifest.attribution = defaults['attribution']
 
     return result
+
 
 def setup_ogr_cache(data_folder):
     # update global variablea
@@ -130,8 +131,9 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
             schema = layer.schema
             geometry_type = layer.schema['geometry']
             for field_name, field_type in schema['properties'].items():
-                fields[format_field_name(field_name)] = format_field_type(field_type)
-            
+                fields[format_field_name(field_name)
+                       ] = format_field_type(field_type)
+
             # layer bounds cannot be computed if layer dont have any features
             try:
                 minx, miny, maxx, maxy = layer.bounds
@@ -139,7 +141,8 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
                     result['bounds'] = [minx, miny, maxx, maxy]
                 else:
                     existing_bbox = box(*result['bounds'])
-                    minx_new, miny_new, maxx_new, maxy_new = existing_bbox.union(box(minx, miny, maxx, maxy)).bounds
+                    minx_new, miny_new, maxx_new, maxy_new = existing_bbox.union(
+                        box(minx, miny, maxx, maxy)).bounds
                     result['bounds'] = [minx_new, miny_new, maxx_new, maxy_new]
             except:
                 print(f'error getting bounds for {layer_name}')
@@ -148,14 +151,15 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
             'fields': fields,
             'geometryType': geometry_type
         })
-    
+
     result['vector_layers'] = vector_layers
 
     # reproject bounds
     if result['crs'] != 'EPSG:4326' and result['bounds'] is not None:
         bounds = get_bbox_for_crs(result['crs'], 'EPSG:4326', result['bounds'])
         result['bounds'] = bounds
-        result['center'] = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
+        result['center'] = [(bounds[0] + bounds[2]) / 2,
+                            (bounds[1] + bounds[3]) / 2]
     else:
         result['center'] = None
 
@@ -181,9 +185,25 @@ def get_starter_style(port: str) -> Any:
         layers = fiona.listlayers(ds_path)
         for layer_name in layers:
             with fiona.open(ds_path, 'r', layer=layer_name) as layer:
-                layer_geometry_types.append((tileset, layer_name, layer.schema['geometry']))
+                layer_geometry_types.append(
+                    (tileset, layer_name, layer.schema['geometry']))
 
-    geometry_order = ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon', 'Unknown']
+    geometry_order = [
+        'Point',
+        '3D Point',
+        'MultiPoint',
+        '3D MultiPoint',
+        'LineString',
+        '3D LineString',
+        'MultiLineString',
+        '3D MultiLineString',
+        'Polygon',
+        '3D Polygon',
+        'MultiPolygon',
+        '3D MultiPolygon',
+        'Unknown',
+        'GeometryCollection',
+        '3D GeometryCollection']
     layer_index = 0
     for orderGeometry in geometry_order:
         for tileset, layer_name, geometryType in layer_geometry_types:
@@ -191,19 +211,24 @@ def get_starter_style(port: str) -> Any:
                 # getting color for layer
                 color = get_color(layer_index)
                 layer_index += 1
-                
-                if geometryType == 'Unknown':
+
+                if geometryType in [
+                    'Unknown',
+                    'GeometryCollection',
+                    '3D GeometryCollection'
+                ]:
                     for g in ['Point', 'LineString', 'Polygon']:
-                        style_json['layers'].append(get_layer_style(tileset, color, f'{layer_name}_{g.lower()}', layer_name, g))
+                        style_json['layers'].append(get_layer_style(
+                            tileset, color, f'{layer_name}_{g.lower()}', layer_name, g))
                 else:
-                    style_json['layers'].append(get_layer_style(tileset, color, layer_name, layer_name, orderGeometry))
-            
-    
+                    style_json['layers'].append(get_layer_style(
+                        tileset, color, layer_name, layer_name, orderGeometry))
+
     return style_json
 
 
 def get_layer_style(tileset: str, color: str, layer_name: str, source_layer: str, geometry_type: str) -> Any:
-    if geometry_type == 'LineString' or geometry_type == 'MultiLineString':
+    if geometry_type in ['LineString', '3D LineString', 'MultiLineString', '3D MultiLineString']:
         return {
             'id': layer_name,
             'type': 'line',
@@ -220,7 +245,7 @@ def get_layer_style(tileset: str, color: str, layer_name: str, source_layer: str
                 'line-opacity': 0.75
             }
         }
-    elif geometry_type == 'Polygon' or geometry_type == 'MultiPolygon':
+    elif geometry_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
         return {
             'id': layer_name,
             'type': 'line',
@@ -237,7 +262,7 @@ def get_layer_style(tileset: str, color: str, layer_name: str, source_layer: str
                 'line-opacity': 0.75
             }
         }
-    elif geometry_type == 'Point' or geometry_type == 'MultiPoint':
+    elif geometry_type in ['Point', '3D Point', 'MultiPoint', '3D MultiPoint']:
         return {
             'id': layer_name,
             'type': 'circle',
@@ -256,7 +281,8 @@ def get_layer_style(tileset: str, color: str, layer_name: str, source_layer: str
 
 
 def get_color(i: int):
-    colors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'];
+    colors = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c',
+              '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
     if i < len(colors):
         return colors[i]
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
@@ -271,13 +297,15 @@ def buffered_bbox(bbox, extent: int, buffer: int):
     clip_bbox = clip_bbox.buffer(buffer_distance).bounds
     return clip_bbox
 
+
 def get_features_no_abort(tileset: str, x: int, y: int, z: int):
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
-    bbox = (bbox_bounds.left, bbox_bounds.bottom, bbox_bounds.right, bbox_bounds.top)
+    bbox = (bbox_bounds.left, bbox_bounds.bottom,
+            bbox_bounds.right, bbox_bounds.top)
 
     manifest: TilesetManifest = get_tileset_manifest()[tileset]
 
-    ## buffer to vertor tile
+    # buffer to vertor tile
     clip_bbox = buffered_bbox(bbox, manifest.extent, manifest.tile_buffer)
 
     ds_path = os.path.join(data_location, f'{tileset}.gpkg')
@@ -293,14 +321,14 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
             if srid != 'EPSG:3857':
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
 
-
             features = layer.filter(bbox=bbox)
             for feat in features:
                 processed_geom = clip_by_rect(
                     shape(feat.geometry),
                     *clip_bbox,
                 )
-                processed_geom = processed_geom.simplify(manifest.simplify_tolerance, False)
+                processed_geom = processed_geom.simplify(
+                    manifest.simplify_tolerance, False)
                 processed_features.append({
                     "geometry": processed_geom,
                     "properties": feat.properties
@@ -308,7 +336,7 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
         result.append((layer_name, processed_features))
     return result, srid
 
+
 @abort_after(3)
 def get_features(tileset: str, x: int, y: int, z: int):
     return get_features_no_abort(tileset, x, y, z)
-    
