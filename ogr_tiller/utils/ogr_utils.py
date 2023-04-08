@@ -324,9 +324,9 @@ def get_features_no_abort(tileset: str, x: int, y: int, z: int):
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             srid = layer.crs
             if srid != 'EPSG:3857':
-                bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
+                clip_bbox = get_bbox_for_crs("EPSG:3857", srid, clip_bbox)
 
-            features = layer.filter(bbox=bbox)
+            features = layer.filter(bbox=clip_bbox)
             for feat in features:
                 processed_geom = clip_by_rect(
                     shape(feat.geometry),
