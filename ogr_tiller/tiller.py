@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.ogr_utils import get_features_no_abort, get_starter_style, get_tile_json, get_features, get_tileset_manifest, get_tilesets
 from ogr_tiller.poco.job_param import JobParam
 import uvicorn
@@ -58,13 +59,17 @@ def start_api(job_param: JobParam):
 
     @app.get("/tilesets/{tileset}/tiles/{z}/{x}/{y}.mvt")
     async def get_tile(tileset: str, z: int, x: int, y: int):
-        if tileset not in get_tilesets():
-            return Response(status_code=404)
-        
         headers = {
             "content-type": "application/vnd.mapbox-vector-tile",
             "Cache-Control": 'no-cache, no-store'
         }
+
+        if tileset not in get_tilesets():
+            return Response(status_code=404, headers=headers)
+        
+        manifest: TilesetManifest = get_tileset_manifest()[tileset]
+        
+        
 
         if job_param.mode == 'serve_cache' or not job_param.disable_caching:
             cached_data = read_cache(tileset, x, y, z)
@@ -82,7 +87,7 @@ def start_api(job_param: JobParam):
                 return Response(status_code=404, headers=headers)
             
             
-            data = tile_utils.get_tile(layer_features, x, y, z, srid)
+            data = tile_utils.get_tile(layer_features, x, y, z, srid, manifest.extent)
         except TimeOutException:
             return timeout_response()
 
@@ -117,7 +122,8 @@ def build_cache(job_param: JobParam):
 
     tilesets = get_tilesets()
     for tileset in tilesets:
-        tilejson = get_tile_json(tileset, job_param.port, get_tileset_manifest()[tileset])
+        manifest: TilesetManifest = get_tileset_manifest()[tileset]
+        tilejson = get_tile_json(tileset, job_param.port, manifest)
         bbox = box(*tilejson['bounds'])
         fc = {
             "features": [{"type": "Feature", "geometry": a} for a in [mapping(b) for b in [bbox]]]
@@ -135,7 +141,7 @@ def build_cache(job_param: JobParam):
                 layer_features, srid = get_features_no_abort(tileset, x, y, z)
                 if len(layer_features) == 0:
                     return
-                data = tile_utils.get_tile_no_abort(layer_features, x, y, z, srid)
+                data = tile_utils.get_tile_no_abort(layer_features, x, y, z, srid, manifest.extent)
                 update_cache(tileset, x, y, z, data)
             except Exception:
                 print(f'error generating tile for {(x, y, z)}')
