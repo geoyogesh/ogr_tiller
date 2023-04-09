@@ -12,6 +12,7 @@ from shapely.ops import clip_by_rect
 import os
 import traceback
 import warnings
+from shapely.wkt import dumps as dump_wkt
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 
@@ -32,7 +33,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
 
         try:
             # generated features for that level
-            bbox_bounds = tms.xy_bounds(morecantile.Tile(seed_x, seed_y, seed_z))
+            bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
             bbox = (bbox_bounds.left, bbox_bounds.bottom,
                     bbox_bounds.right, bbox_bounds.top)
             bbox_shape = shape(box(*bbox))
@@ -42,8 +43,9 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
 
             # buffer to vertor tile
             clip_bbox = buffered_bbox(bbox_shape, unit_distance, manifest.tile_buffer)
+            clip_bbox_shape = shape(box(*clip_bbox))
             tolerance = unit_distance * manifest.simplify_tolerance
-            layer_features = process_features(parent_layer_features, clip_bbox, tolerance)
+            layer_features = filter_features(parent_layer_features, clip_bbox_shape)
             if not check_has_features_layers(layer_features):
                 return
 
@@ -56,7 +58,11 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
             process(layer_features, new_x, new_y + 1, new_z, extent, max_zoom, result)
             process(layer_features, new_x + 1, new_y + 1, new_z, extent, max_zoom, result)
 
-            print('processing', tileset, new_x, new_y, new_z)
+            print('\t processing', tileset, new_x, new_y, new_z)
+
+            layer_features = process_features(layer_features, clip_bbox, tolerance)
+            if not check_has_features_layers(layer_features):
+                return
             
             if srid != 'EPSG:3857':
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
@@ -68,7 +74,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
             traceback.print_exc()
 
     
-    print('working on seed')
+    print('working on seed ', tileset, seed_x, seed_y, seed_z)
     ds_path = os.path.join(get_data_location(), f'{tileset}.gpkg')
     bbox_bounds = tms.xy_bounds(morecantile.Tile(seed_x, seed_y, seed_z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom,
@@ -154,6 +160,21 @@ def get_features(ds_path: str, clip_bbox):
                 })   
         result.append((layer_name, processed_features))
     return result, srid
+
+def filter_features(layer_features: Tuple[str, List[Any]], clip_bbox_shape):
+    result = []
+    for layer_name, features in layer_features:
+        filtered_features = []
+        for feat in features:
+            geom = feat['geometry']
+            processed_geom = clip_by_rect(
+                geom,
+                *clip_bbox_shape.bounds
+            )
+            if not processed_geom.is_empty:
+                filtered_features.append(feat)
+        result.append((layer_name, filtered_features))
+    return result
 
 def process_features(layer_features: Tuple[str, List[Any]], clip_bbox, tolerance: float):
     result = []
