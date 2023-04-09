@@ -1,10 +1,8 @@
 from typing import Any
 import fiona
-from shapely.geometry import box
-from shapely.geometry import shape
+from shapely.geometry import box, shape
 import random
 import os
-from shapely.ops import clip_by_rect
 from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.fast_api_utils import abort_after
 from ogr_tiller.utils.proj_utils import get_bbox_for_crs
@@ -22,6 +20,8 @@ cached_tileset_manifest = None
 def get_tilesets():
     return cached_tileset_names
 
+def get_data_location():
+    return data_location
 
 def get_tileset_manifest():
     return cached_tileset_manifest
@@ -288,60 +288,7 @@ def get_color(i: int):
     return f"#{''.join([random.choice('0123456789ABCDEF') for i in range(6)])}"
 
 
-def unit_pixel_distance(bbox, extent: int):
-    width = abs(bbox[0] - bbox[2])
-    height = abs(bbox[1] - bbox[3])
-    distance_meters = max([width, height])
-    unit_distance = (1/extent) * distance_meters
-    return unit_distance
-
-def buffered_bbox(bbox, unit_distance: float, buffer: int):
-    buffer_distance = unit_distance * buffer
-    clip_bbox = shape(box(*bbox))
-    clip_bbox = clip_bbox.buffer(buffer_distance).bounds
-    return clip_bbox
 
 
-def get_features_no_abort(tileset: str, x: int, y: int, z: int):
-    bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))
-    bbox = (bbox_bounds.left, bbox_bounds.bottom,
-            bbox_bounds.right, bbox_bounds.top)
-    
-    manifest: TilesetManifest = get_tileset_manifest()[tileset]
-    unit_distance = unit_pixel_distance(bbox, manifest.extent)
-
-    # buffer to vertor tile
-    clip_bbox = buffered_bbox(bbox, unit_distance, manifest.tile_buffer)
-
-    ds_path = os.path.join(data_location, f'{tileset}.gpkg')
-    layers = fiona.listlayers(ds_path)
-    result = []
-
-    srid = None
-
-    for layer_name in layers:
-        processed_features = []
-        with fiona.open(ds_path, 'r', layer=layer_name) as layer:
-            srid = layer.crs
-            if srid != 'EPSG:3857':
-                clip_bbox = get_bbox_for_crs("EPSG:3857", srid, clip_bbox)
-
-            features = layer.filter(bbox=clip_bbox)
-            for feat in features:
-                processed_geom = clip_by_rect(
-                    shape(feat.geometry),
-                    *clip_bbox,
-                )
-                processed_geom = processed_geom.simplify(
-                    unit_distance * manifest.simplify_tolerance, False)
-                processed_features.append({
-                    "geometry": processed_geom,
-                    "properties": feat.properties
-                })
-        result.append((layer_name, processed_features))
-    return result, srid
 
 
-@abort_after(3)
-def get_features(tileset: str, x: int, y: int, z: int):
-    return get_features_no_abort(tileset, x, y, z)

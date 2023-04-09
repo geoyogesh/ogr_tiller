@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 import os
-from typing import Any
+from typing import Any, List
 
 # setup tile cache
 cache_location = None
@@ -17,6 +17,23 @@ def update_cache(tileset: str, x: int, y: int, z: int, data: Any):
               VALUES(?,?,?,?,?) 
         '''
         conn.execute(sql, (tileset, x, y, z, data))
+        conn.commit()
+    except Error as e:
+        print(e)
+    finally:
+        if conn:
+            conn.close()
+
+def update_multiple_cache(rows: List[Any]):  
+    # [(tileset, x, y, z, data)]
+    conn = None
+    try:
+        conn = sqlite3.connect(db_file)
+        sql = '''
+        INSERT INTO tiles(tileset,x,y,z,data)
+              VALUES(?,?,?,?,?) 
+        '''
+        conn.executemany(sql, rows)
         conn.commit()
     except Error as e:
         print(e)
