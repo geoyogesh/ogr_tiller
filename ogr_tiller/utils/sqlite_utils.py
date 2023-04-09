@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import Error
 import os
 from typing import Any, List
+import glob 
 
 # setup tile cache
 cache_location = None
@@ -66,9 +67,12 @@ def read_cache(tileset: str, x: int, y: int, z: int):
 
 
 def cleanup_mbtile_cache(cache_folder):
-    db_file = os.path.join(cache_folder, 'cache.mbtiles')
-    if os.path.isfile(db_file):
-        os.remove(db_file)
+    db_file_pattern = os.path.join(cache_folder, 'cache.*')
+    files = glob.glob(db_file_pattern, recursive=False)
+    for file in files:
+        if os.path.isfile(file):
+            os.remove(file)
+
 
 def setup_mbtile_cache(cache_folder):
     global cache_location, db_file
