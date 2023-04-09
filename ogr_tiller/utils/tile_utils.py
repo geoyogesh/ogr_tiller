@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 tms = morecantile.tms.get("WebMercatorQuad")
 
+
 def check_has_features_layers(layer_features: Tuple[str, List[Any]]):
     result = False
     for layer_name, features in layer_features:
@@ -98,7 +99,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
 
 
 
-
+@abort_after()
 def get_tile(tileset: str, x: int, y: int, z: int, extent: int):
     ds_path = os.path.join(get_data_location(), f'{tileset}.gpkg')
     bbox_bounds = tms.xy_bounds(morecantile.Tile(x, y, z))

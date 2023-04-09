@@ -115,6 +115,7 @@ def start_tiller_process(job_param: JobParam):
     print('data_folder:', job_param.data_folder)
     print('cache_folder:', job_param.cache_folder)
     print('port:', job_param.port)
+    print('tile_timeout:', job_param.tile_timeout)
 
     if job_param.mode == 'serve' or job_param.mode == 'serve_cache':
         print('Web UI started')
