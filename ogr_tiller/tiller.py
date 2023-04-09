@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from ogr_tiller.cache_builder import build_cache
 from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.job_utils import common
-from ogr_tiller.utils.ogr_utils import get_starter_style, get_tile_json, get_features, get_tileset_manifest, get_tilesets
+from ogr_tiller.utils.ogr_utils import get_starter_style, get_tile_json, get_tileset_manifest, get_tilesets
 from ogr_tiller.poco.job_param import JobParam
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
@@ -79,12 +79,10 @@ def start_api(job_param: JobParam):
 
         data = None
         try:
-            layer_features, srid = get_features(tileset, x, y, z)
-            if len(layer_features) == 0:
+            data = tile_utils.get_tile(tileset, x, y, z, manifest.extent)
+            if data is None:
                 return Response(status_code=404, headers=headers)
-            
-            
-            data = tile_utils.get_tile(layer_features, x, y, z, srid, manifest.extent)
+
         except TimeOutException:
             return timeout_response()
 
