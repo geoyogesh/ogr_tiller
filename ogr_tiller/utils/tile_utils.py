@@ -29,7 +29,7 @@ def check_has_features_layers(layer_features: Tuple[str, List[Any]]):
             break
     return result
 
-def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result):
+def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result, progress: Progress, progress_task_id):
     def process(
             parent_layer_features: Tuple[str, List[Any]], 
             x: int, y: int, z: int, extent: int, max_zoom: int, result, 
@@ -100,14 +100,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
     if not check_has_features_layers(layer_features):
         return
     
-
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-    ) as progress:
-        progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
-        process(layer_features, seed_x, seed_y, seed_z, manifest.extent, max_zoom, result, progress, progress_task_id)
+    process(layer_features, seed_x, seed_y, seed_z, manifest.extent, max_zoom, result, progress, progress_task_id)
 
 
 
