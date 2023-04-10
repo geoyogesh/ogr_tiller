@@ -10,6 +10,7 @@ from shapely.geometry import box, shape, mapping
 from supermercado import edge_finder, uniontiles, burntiles, super_utils
 import ogr_tiller.utils.tile_utils as tile_utils
 from rich import print
+from rich.progress import Progress, TextColumn, SpinnerColumn
 
 @timeit
 def build_cache(job_param: JobParam):
@@ -32,13 +33,14 @@ def build_cache(job_param: JobParam):
         print(f'generating seed tilelist with {tilejson["minzoom"]} level')
         tiles = burntiles.burn(features, tilejson['minzoom'])
 
+        result = []
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
+            
             progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
-            result = []
             def process_tile(tile):
                 x, y, z = tile
                 x = x.item()
