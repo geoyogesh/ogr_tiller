@@ -8,7 +8,7 @@ from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 import morecantile
 from shapely.geometry import box, shape
 import fiona
-from shapely.ops import clip_by_rect
+from shapely.ops import clip_by_rect, polylabel
 import os
 import traceback
 import warnings
@@ -160,6 +160,7 @@ def get_features(ds_path: str, clip_bbox):
 
     for layer_name in layers:
         processed_features = []
+        label_features = []
         with fiona.open(ds_path, 'r', layer=layer_name) as layer:
             srid = layer.crs
             if srid != 'EPSG:3857':
@@ -167,11 +168,21 @@ def get_features(ds_path: str, clip_bbox):
 
             features = layer.filter(bbox=clip_bbox)
             for feat in features:
+                geom = shape(feat.geometry)
                 processed_features.append({
-                    "geometry": shape(feat.geometry),
+                    "geometry": geom,
                     "properties": feat.properties
-                })   
+                })
+
+                if geom.type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
+                    label_point = polylabel(geom)
+                    label_features.append({
+                        "geometry": label_point,
+                        "properties": feat['properties']
+                    })   
         result.append((layer_name, processed_features))
+        if len(label_features) > 0:
+            result.append((f'{layer_name}_label', label_features))
     return result, srid
 
 def filter_features(layer_features: Tuple[str, List[Any]], clip_bbox_shape):

@@ -9,7 +9,7 @@ CLASSIFIERS = [
 ]
 
 setup(name='ogr_tiller',
-      version='0.0.39',
+      version='0.0.40',
       url='https://github.com/geoyogesh/ogr_tiller',
       license='GNU-GPL',
       author='Yogesh Dhanapal',
