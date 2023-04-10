@@ -15,6 +15,7 @@ import ogr_tiller.utils.tile_utils as tile_utils
 import json
 
 from fastapi.middleware.gzip import GZipMiddleware
+from rich import print
 
 
 

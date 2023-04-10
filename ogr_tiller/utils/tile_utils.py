@@ -15,6 +15,8 @@ import warnings
 from shapely.wkt import dumps as dump_wkt
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
+from rich import print
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 tms = morecantile.tms.get("WebMercatorQuad")
 
@@ -28,7 +30,10 @@ def check_has_features_layers(layer_features: Tuple[str, List[Any]]):
     return result
 
 def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result):
-    def process(parent_layer_features: Tuple[str, List[Any]], x: int, y: int, z: int, extent: int, max_zoom: int, result):
+    def process(
+            parent_layer_features: Tuple[str, List[Any]], 
+            x: int, y: int, z: int, extent: int, max_zoom: int, result, 
+            progress: Progress, progress_task_id):
         if z > max_zoom:
             return
 
@@ -54,12 +59,12 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
             new_z = z + 1
             new_x = x * 2
             new_y = y * 2
-            process(layer_features, new_x, new_y, new_z, extent, max_zoom, result)
-            process(layer_features, new_x + 1, new_y, new_z, extent, max_zoom, result)
-            process(layer_features, new_x, new_y + 1, new_z, extent, max_zoom, result)
-            process(layer_features, new_x + 1, new_y + 1, new_z, extent, max_zoom, result)
+            process(layer_features, new_x, new_y, new_z, extent, max_zoom, result, progress, progress_task_id)
+            process(layer_features, new_x + 1, new_y, new_z, extent, max_zoom, result, progress, progress_task_id)
+            process(layer_features, new_x, new_y + 1, new_z, extent, max_zoom, result, progress, progress_task_id)
+            process(layer_features, new_x + 1, new_y + 1, new_z, extent, max_zoom, result, progress, progress_task_id)
 
-            print('\t processing', tileset, new_x, new_y, new_z)
+            # print('\t processing', tileset, new_x, new_y, new_z)
 
             layer_features = process_features(layer_features, clip_bbox, tolerance)
             if not check_has_features_layers(layer_features):
@@ -69,13 +74,14 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
             data = tile_utils.encode_tile(layer_features, bbox, extent)
             result.append((tileset, x, y, z, data))
+            progress.update(progress_task_id, description=f"{tileset}: Generated {len(result)} tiles")
         except Exception as e:
             print('error processing ', tileset, x, y, z)
             print(e)
             traceback.print_exc()
 
     
-    print('working on seed ', tileset, seed_x, seed_y, seed_z)
+    #print('working on seed ', tileset, seed_x, seed_y, seed_z)
     ds_path = os.path.join(get_data_location(), f'{tileset}.gpkg')
     bbox_bounds = tms.xy_bounds(morecantile.Tile(seed_x, seed_y, seed_z))
     bbox = (bbox_bounds.left, bbox_bounds.bottom,
@@ -95,7 +101,13 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result)
         return
     
 
-    process(layer_features, seed_x, seed_y, seed_z, manifest.extent, max_zoom, result)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
+        process(layer_features, seed_x, seed_y, seed_z, manifest.extent, max_zoom, result, progress, progress_task_id)
 
 
 
