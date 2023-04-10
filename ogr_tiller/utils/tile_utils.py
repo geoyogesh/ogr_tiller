@@ -152,6 +152,13 @@ def unit_pixel_distance(bbox, extent: int):
     unit_distance = (1/extent) * distance_meters
     return unit_distance
 
+
+def make_valid_polygon(polygon):
+    if not polygon.is_valid:
+        return polygon.buffer(0)
+    return polygon
+
+
 def get_features(ds_path: str, clip_bbox):
     layers = fiona.listlayers(ds_path)
     result = []
@@ -181,13 +188,14 @@ def get_features(ds_path: str, clip_bbox):
                         max_polygon = 0
                         polygons = geom.geoms
                         for polygon in polygons:
-                            area = polygon.area
+                            processed_poly = make_valid_polygon(polygon)
+                            area = processed_poly.area
                             if area > max_area:
                                 max_area = area
-                                max_polygon = polygon
+                                max_polygon = processed_poly
                         label_point = polylabel(max_polygon)
                     else:
-                        label_point = polylabel(geom)
+                        label_point = polylabel(make_valid_polygon(geom))
 
                     label_features.append({
                         "geometry": label_point,
