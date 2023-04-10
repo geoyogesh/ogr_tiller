@@ -153,6 +153,14 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
             'geometryType': geometry_type
         })
 
+        # include label point layer if it is polygon
+        if geometry_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
+            vector_layers.append({
+                'id': f'{layer_name}_label',
+                'fields': fields,
+                'geometryType': 'Point'
+            })
+
     result['vector_layers'] = vector_layers
 
     # reproject bounds
