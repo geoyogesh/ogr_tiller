@@ -4,6 +4,7 @@ import sys
 
 from fastapi.responses import JSONResponse
 from starlette import status
+from rich import print
 
 # max_execution_time in seconds
 TILE_TIMEOUT = None

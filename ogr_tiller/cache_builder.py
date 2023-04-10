@@ -9,6 +9,7 @@ from ogr_tiller.utils.sqlite_utils import cleanup_mbtile_cache, update_cache, up
 from shapely.geometry import box, shape, mapping
 from supermercado import edge_finder, uniontiles, burntiles, super_utils
 import ogr_tiller.utils.tile_utils as tile_utils
+from rich import print
 
 @timeit
 def build_cache(job_param: JobParam):

@@ -9,6 +9,7 @@ from ogr_tiller.utils.proj_utils import get_bbox_for_crs
 import yaml
 import json
 import morecantile
+from rich import print
 
 tms = morecantile.tms.get("WebMercatorQuad")
 

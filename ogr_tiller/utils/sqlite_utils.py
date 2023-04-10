@@ -3,6 +3,7 @@ from sqlite3 import Error
 import os
 from typing import Any, List
 import glob 
+from rich import print
 
 # setup tile cache
 cache_location = None

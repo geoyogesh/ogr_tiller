@@ -1,5 +1,6 @@
 import time
 from functools import wraps
+from rich import print
 
 
 def time_format(seconds: float) -> str:
