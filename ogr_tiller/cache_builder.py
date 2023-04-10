@@ -32,15 +32,21 @@ def build_cache(job_param: JobParam):
         print(f'generating seed tilelist with {tilejson["minzoom"]} level')
         tiles = burntiles.burn(features, tilejson['minzoom'])
 
-        result = []
-        def process_tile(tile):
-            x, y, z = tile
-            x = x.item()
-            y = y.item()
-            z = z.item()
-            tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result)
-        for tile in tiles:
-            process_tile(tile)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+        ) as progress:
+            progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
+            result = []
+            def process_tile(tile):
+                x, y, z = tile
+                x = x.item()
+                y = y.item()
+                z = z.item()
+                tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result, progress, progress_task_id)
+            for tile in tiles:
+                process_tile(tile)
         
         print('number of tiles generated for ', tileset, len(result))
         print('writing the mbtile files')
