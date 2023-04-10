@@ -24,6 +24,9 @@ def build_cache(job_param: JobParam):
         print('working on tileset: ', tileset)
         manifest: TilesetManifest = get_tileset_manifest()[tileset]
         tilejson = get_tile_json(tileset, job_param.port, manifest)
+        if tilejson['bounds'] is None:
+            print(f'skipping {tileset} tileset because it may be empty')
+            continue
         bbox = box(*tilejson['bounds'])
         fc = {
             "features": [{"type": "Feature", "geometry": a} for a in [mapping(b) for b in [bbox]]]
