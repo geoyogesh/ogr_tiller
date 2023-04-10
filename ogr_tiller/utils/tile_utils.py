@@ -174,7 +174,7 @@ def get_features(ds_path: str, clip_bbox):
                     "properties": feat.properties
                 })
 
-                if geom.type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
+                if geom.geom_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
                     label_point = polylabel(geom)
                     label_features.append({
                         "geometry": label_point,
@@ -182,6 +182,7 @@ def get_features(ds_path: str, clip_bbox):
                     })   
         result.append((layer_name, processed_features))
         if len(label_features) > 0:
+            print(f'included {layer_name}_label layer')
             result.append((f'{layer_name}_label', label_features))
     return result, srid
 
