@@ -74,7 +74,11 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
             data = tile_utils.encode_tile(layer_features, bbox, extent)
             result.append((tileset, x, y, z, data))
-            progress.update(progress_task_id, description=f"{tileset}: Generated {len(result)} tiles")
+
+            tile_count = len(result)
+            if tile_count < 100 or (tile_count > 100 and tile_count % 100 == 0):
+                progress.update(progress_task_id, description=f"{tileset}: Generated {tile_count} tiles")
+                
         except Exception as e:
             print('error processing ', tileset, x, y, z)
             print(e)

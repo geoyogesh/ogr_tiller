@@ -136,5 +136,5 @@ if __name__ == "__main__":
     cache_folder = './cache/'
     port = '8080'
     disable_caching = True
-    job_param = JobParam('serve', data_folder, cache_folder, port, disable_caching)
+    job_param = JobParam('serve', data_folder, cache_folder, None, port, disable_caching, '3')
     start_tiller_process(job_param)
