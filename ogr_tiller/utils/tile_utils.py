@@ -75,8 +75,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
             data = tile_utils.encode_tile(layer_features, bbox, extent)
             result.append((tileset, x, y, z, data))
 
-            tile_count = len(result)
-            progress.update(progress_task_id, description=f"{tileset}: Generated {tile_count} tiles")
+            progress.update(progress_task_id, advance=1)
                 
         except Exception as e:
             print('error processing ', tileset, x, y, z)
