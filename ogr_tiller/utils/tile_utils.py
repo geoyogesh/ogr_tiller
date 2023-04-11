@@ -76,8 +76,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
             result.append((tileset, x, y, z, data))
 
             tile_count = len(result)
-            if tile_count < 100 or (tile_count > 100 and tile_count % 100 == 0):
-                progress.update(progress_task_id, description=f"{tileset}: Generated {tile_count} tiles")
+            progress.update(progress_task_id, description=f"{tileset}: Generated {tile_count} tiles")
                 
         except Exception as e:
             print('error processing ', tileset, x, y, z)

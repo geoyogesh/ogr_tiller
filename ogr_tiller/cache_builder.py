@@ -48,6 +48,7 @@ def build_cache(job_param: JobParam):
             tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result, progress, progress_task_id)
         for tile in tiles:
             process_tile(tile)
+        progress.update(progress_task_id, visible=False)
         
         print(f'{tileset}: number of tiles generated for {tileset} {len(result)}')
         print(f'{tileset}: writing the mbtile files')
