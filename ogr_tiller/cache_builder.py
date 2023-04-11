@@ -20,42 +20,46 @@ def build_cache(job_param: JobParam):
     common(job_param)
 
     tilesets = get_tilesets()
-    for tileset in tilesets:
-        print('working on tileset: ', tileset)
+
+    def process_tileset(tileset: str):
+        print(f'{tileset}: working on tileset')
         manifest: TilesetManifest = get_tileset_manifest()[tileset]
         tilejson = get_tile_json(tileset, job_param.port, manifest)
         if tilejson['bounds'] is None:
-            print(f'skipping {tileset} tileset because it may be empty')
-            continue
+            print(f'{tileset}: skipping tileset because it may be empty')
+            return
         bbox = box(*tilejson['bounds'])
         fc = {
             "features": [{"type": "Feature", "geometry": a} for a in [mapping(b) for b in [bbox]]]
         }
         features = [f for f in super_utils.filter_features(fc["features"])]
 
-        print(f'generating seed tilelist with {tilejson["minzoom"]} level')
+        print(f'{tileset}: Generating seed tilelist with {tilejson["minzoom"]} level')
         tiles = burntiles.burn(features, tilejson['minzoom'])
 
         result = []
-        with Progress(
+        
+        progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
+        def process_tile(tile):
+            x, y, z = tile
+            x = x.item()
+            y = y.item()
+            z = z.item()
+            tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result, progress, progress_task_id)
+        for tile in tiles:
+            process_tile(tile)
+        
+        print(f'{tileset}: number of tiles generated for {tileset} {len(result)}')
+        print(f'{tileset}: writing the mbtile files')
+        update_multiple_cache(result)
+        print(f'{tileset}: completed generating tileset: {tileset}')
+
+    with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
-            
-            progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
-            def process_tile(tile):
-                x, y, z = tile
-                x = x.item()
-                y = y.item()
-                z = z.item()
-                tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result, progress, progress_task_id)
-            for tile in tiles:
-                process_tile(tile)
-        
-        print('number of tiles generated for ', tileset, len(result))
-        print('writing the mbtile files')
-        update_multiple_cache(result)
-        print('completed generating tileset: ', tileset)
+        with Pool(processes=multiprocessing.cpu_count()) as pool:
+            pool.map(process_tileset, tilesets)
         
 
