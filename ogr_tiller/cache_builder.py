@@ -1,5 +1,3 @@
-from multiprocessing.pool import ThreadPool as Pool
-import multiprocessing
 from ogr_tiller.poco.job_param import JobParam
 from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.job_utils import common
@@ -10,7 +8,7 @@ from shapely.geometry import box, shape, mapping
 from supermercado import edge_finder, uniontiles, burntiles, super_utils
 import ogr_tiller.utils.tile_utils as tile_utils
 from rich import print
-from rich.progress import Progress, TextColumn, SpinnerColumn
+from rich.progress import Progress, TextColumn, SpinnerColumn, BarColumn, MofNCompleteColumn, TimeElapsedColumn, TimeRemainingColumn
 
 @timeit
 def build_cache(job_param: JobParam):
@@ -27,6 +25,7 @@ def build_cache(job_param: JobParam):
         tilejson = get_tile_json(tileset, job_param.port, manifest)
         if tilejson['bounds'] is None:
             print(f'{tileset}: skipping tileset because it may be empty')
+            progress.update(progress_tilesets_task_id, advance=1)
             return
         bbox = box(*tilejson['bounds'])
         fc = {
@@ -39,7 +38,7 @@ def build_cache(job_param: JobParam):
 
         result = []
         
-        progress_task_id = progress.add_task(description=f"{tileset}: Generated {len(result)} tiles", total=None)
+        progress_task_id = progress.add_task(description=f"{tileset}: tiles", total=None)
         def process_tile(tile):
             x, y, z = tile
             x = x.item()
@@ -48,7 +47,8 @@ def build_cache(job_param: JobParam):
             tile_utils.get_tile_descendant_tiles(tileset, x, y, z, tilejson["maxzoom"], result, progress, progress_task_id)
         for tile in tiles:
             process_tile(tile)
-        progress.update(progress_task_id, visible=False)
+        progress.update(progress_task_id, total=len(result))
+        progress.update(progress_tilesets_task_id, advance=1)
         
         print(f'{tileset}: number of tiles generated for {tileset} {len(result)}')
         print(f'{tileset}: writing the mbtile files')
@@ -58,9 +58,14 @@ def build_cache(job_param: JobParam):
     with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
             transient=True,
         ) as progress:
-        with Pool(processes=multiprocessing.cpu_count()) as pool:
-            pool.map(process_tileset, tilesets)
+        progress_tilesets_task_id = progress.add_task(description=f"Tilesets", total=len(tilesets))
+        for tileset in tilesets:
+            process_tileset(tileset)
         
 
