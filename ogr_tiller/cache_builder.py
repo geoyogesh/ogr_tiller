@@ -38,7 +38,7 @@ def build_cache(job_param: JobParam):
 
         result = []
         
-        progress_task_id = progress.add_task(description=f"{tileset}: tiles", total=None)
+        progress_task_id = progress.add_task(description=f"{tileset}", total=None)
         def process_tile(tile):
             x, y, z = tile
             x = x.item()
@@ -62,9 +62,8 @@ def build_cache(job_param: JobParam):
             MofNCompleteColumn(),
             TextColumn("•"),
             TimeElapsedColumn(),
-            transient=True,
         ) as progress:
-        progress_tilesets_task_id = progress.add_task(description=f"Tilesets", total=len(tilesets))
+        progress_tilesets_task_id = progress.add_task(description=f"All Tilesets", total=len(tilesets))
         for tileset in tilesets:
             process_tileset(tileset)
         
