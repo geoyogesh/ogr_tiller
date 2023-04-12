@@ -177,21 +177,7 @@ def get_features(ds_path: str, clip_bbox):
                 })
 
                 if geom.geom_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
-                    label_point = None
-                    if geom.geom_type in ['MultiPolygon', '3D MultiPolygon']:
-                        max_area = 0
-                        max_polygon = 0
-                        polygons = geom.geoms
-                        for polygon in polygons:
-                            processed_poly = make_valid_polygon(polygon)
-                            area = processed_poly.area
-                            if area > max_area:
-                                max_area = area
-                                max_polygon = processed_poly
-                        label_point = polylabel(max_polygon)
-                    else:
-                        label_point = polylabel(make_valid_polygon(geom))
-
+                    label_point = geom.representative_point()
                     label_features.append({
                         "geometry": label_point,
                         "properties": feat['properties']
