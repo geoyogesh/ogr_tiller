@@ -29,10 +29,13 @@ def check_has_features_layers(layer_features: Tuple[str, List[Any]]):
             break
     return result
 
-def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result, progress: Progress, progress_task_id):
-    def process(
+
+def get_tile_descendant_tiles(
+            tileset: str,
             parent_layer_features: Tuple[str, List[Any]], 
-            x: int, y: int, z: int, extent: int, max_zoom: int, result, 
+            x: int, y: int, z: int, 
+            manifest: TilesetManifest, srid: int, 
+            min_zoom: int, max_zoom: int, result, 
             progress: Progress, progress_task_id):
         if z > max_zoom:
             return
@@ -59,11 +62,15 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
             new_z = z + 1
             new_x = x * 2
             new_y = y * 2
-            process(layer_features, new_x, new_y, new_z, extent, max_zoom, result, progress, progress_task_id)
-            process(layer_features, new_x + 1, new_y, new_z, extent, max_zoom, result, progress, progress_task_id)
-            process(layer_features, new_x, new_y + 1, new_z, extent, max_zoom, result, progress, progress_task_id)
-            process(layer_features, new_x + 1, new_y + 1, new_z, extent, max_zoom, result, progress, progress_task_id)
+            get_tile_descendant_tiles(tileset, layer_features, new_x, new_y, new_z, manifest, srid, min_zoom, max_zoom, result, progress, progress_task_id)
+            get_tile_descendant_tiles(tileset, layer_features, new_x + 1, new_y, new_z, manifest, srid, min_zoom, max_zoom, result, progress, progress_task_id)
+            get_tile_descendant_tiles(tileset, layer_features, new_x, new_y + 1, new_z, manifest, srid, min_zoom, max_zoom, result, progress, progress_task_id)
+            get_tile_descendant_tiles(tileset, layer_features, new_x + 1, new_y + 1, new_z, manifest, srid, min_zoom, max_zoom, result, progress, progress_task_id)
 
+
+            if z < min_zoom:
+                return
+            
             # print('\t processing', tileset, new_x, new_y, new_z)
 
             layer_features = process_features(layer_features, clip_bbox, tolerance)
@@ -72,7 +79,7 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
             
             if srid != 'EPSG:3857':
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
-            data = tile_utils.encode_tile(layer_features, bbox, extent)
+            data = tile_utils.encode_tile(layer_features, bbox, manifest.extent)
             result.append((tileset, x, y, z, data))
 
             progress.update(progress_task_id, advance=1)
@@ -81,28 +88,6 @@ def get_tile_descendant_tiles(tileset, seed_x, seed_y, seed_z, max_zoom, result,
             print('error processing ', tileset, x, y, z)
             print(e)
             traceback.print_exc()
-
-    
-    #print('working on seed ', tileset, seed_x, seed_y, seed_z)
-    ds_path = os.path.join(get_data_location(), f'{tileset}.gpkg')
-    bbox_bounds = tms.xy_bounds(morecantile.Tile(seed_x, seed_y, seed_z))
-    bbox = (bbox_bounds.left, bbox_bounds.bottom,
-            bbox_bounds.right, bbox_bounds.top)
-    bbox_shape = shape(box(*bbox))
-    
-    manifest: TilesetManifest = get_tileset_manifest()[tileset]
-    unit_distance = unit_pixel_distance(bbox, manifest.extent)
-
-    # buffer to vertor tile
-    clip_bbox = buffered_bbox(bbox_shape, unit_distance, manifest.tile_buffer)
-    tolerance = unit_distance * manifest.simplify_tolerance
-
-    layer_features, srid = get_features(ds_path, clip_bbox)
-    # no need to process desending features
-    if not check_has_features_layers(layer_features):
-        return
-    
-    process(layer_features, seed_x, seed_y, seed_z, manifest.extent, max_zoom, result, progress, progress_task_id)
 
 
 
@@ -153,6 +138,34 @@ def make_valid_polygon(polygon):
         return polygon.buffer(0)
     return polygon
 
+def get_all_features(ds_path: str):
+    layers = fiona.listlayers(ds_path)
+    result = []
+
+    srid = None
+
+    for layer_name in layers:
+        processed_features = []
+        label_features = []
+        with fiona.open(ds_path, 'r', layer=layer_name) as layer:
+            srid = layer.crs
+            for feat in layer:
+                geom = shape(feat.geometry)
+                processed_features.append({
+                    "geometry": geom,
+                    "properties": feat.properties
+                })
+
+                if geom.geom_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
+                    label_point = geom.representative_point()
+                    label_features.append({
+                        "geometry": label_point,
+                        "properties": feat['properties']
+                    })   
+        result.append((layer_name, processed_features))
+        if len(label_features) > 0:
+            result.append((f'{layer_name}_label', label_features))
+    return result, srid
 
 def get_features(ds_path: str, clip_bbox):
     layers = fiona.listlayers(ds_path)
