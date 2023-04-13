@@ -14,3 +14,10 @@ class TilesetManifest:
         self.extent = extent
         self.tile_buffer = tile_buffer
         self.simplify_tolerance = simplify_tolerance
+
+    def __str__(self):
+        return f'name: {self.name} minzoom: {self.minzoom} maxzoom: {self.maxzoom} attribution: {self.attribution} extent: {self.extent} tile_buffer: {self.tile_buffer} simplify_tolerance: {self.simplify_tolerance}'
+
+    def __repr__(self):
+        return {'name': self.name, 'minzoom': self.minzoom, 'maxzoom': self.maxzoom, 'attribution': self.attribution, 'extent': self.extent, 'tile_buffer': self.tile_buffer, 'simplify_tolerance': self.simplify_tolerance}.__repr__()
+

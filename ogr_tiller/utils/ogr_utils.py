@@ -68,18 +68,20 @@ def tileset_manifest(tilesets):
                     if 'extent' in defaults and defaults['extent']:
                         manifest.extent = defaults['extent']
             if "config" in partial_manifest and "tilesets" in partial_manifest["config"] and type(partial_manifest["config"]["tilesets"]) is dict:
-                current_config = partial_manifest["config"]["tilesets"].keys()
-                for tileset in current_config:
+                current_config = partial_manifest["config"]["tilesets"]
+                current_config_keys = current_config.keys()
+                for tileset in current_config_keys:
                     manifest = result[tileset]
-                    if 'name' in defaults and defaults['name']:
-                        manifest.name = defaults['name']
-                    if 'minzoom' in defaults and defaults['minzoom']:
-                        manifest.minzoom = defaults['minzoom']
-                    if 'maxzoom' in defaults and defaults['maxzoom']:
-                        manifest.maxzoom = defaults['maxzoom']
-                    if 'attribution' in defaults and defaults['attribution']:
-                        manifest.attribution = defaults['attribution']
-
+                    new_partial_manifest = current_config[tileset]
+                    if 'name' in new_partial_manifest and new_partial_manifest['name']:
+                        manifest.name = new_partial_manifest['name']
+                    if 'minzoom' in new_partial_manifest and new_partial_manifest['minzoom']:
+                        manifest.minzoom = new_partial_manifest['minzoom']
+                    if 'maxzoom' in new_partial_manifest and new_partial_manifest['maxzoom']:
+                        manifest.maxzoom = new_partial_manifest['maxzoom']
+                    if 'attribution' in new_partial_manifest and new_partial_manifest['attribution']:
+                        manifest.attribution = new_partial_manifest['attribution']
+    print('mmanifest', result)
     return result
 
 
