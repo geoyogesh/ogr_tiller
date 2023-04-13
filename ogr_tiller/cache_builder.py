@@ -32,7 +32,7 @@ def build_cache(job_param: JobParam):
         # prep
         
         #print('working on seed ', tileset, seed_x, seed_y, seed_z)
-        progress_task_id = progress.add_task(description=f"{tileset}", start=0, total=None)
+        progress_task_id = progress.add_task(description=f"{tileset}", total=None)
         ds_path = os.path.join(get_data_location(), f'{tileset}.gpkg')
         manifest: TilesetManifest = get_tileset_manifest()[tileset]
         layer_features, srid = tile_utils.get_all_features(ds_path)
