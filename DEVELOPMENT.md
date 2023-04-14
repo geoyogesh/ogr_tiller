@@ -7,7 +7,7 @@ conda config --env --set channel_priority strict
 conda install python=3 fiona mapbox-vector-tile rtree mapbox-vector-tile[proj] pyproj -y
 conda install -y fastapi uvicorn 
 
-pip install supermercado morecantile
+pip install morecantile
 ```
 
 

@@ -9,7 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from ogr_tiller.utils.fast_api_utils import TimeOutException, timeout_response
 
-from ogr_tiller.utils.sqlite_utils import read_cache, setup_mbtile_cache, update_cache
+from ogr_tiller.utils.sqlite_utils import read_cache, update_cache
 from ogr_tiller.utils.stylesheet_utils import get_starter_style
 import ogr_tiller.utils.tile_utils as tile_utils
 import json
@@ -54,13 +54,13 @@ def start_api(job_param: JobParam):
     @app.get("/styles/system/starter.json")
     async def get_style_json():
         tilesets = get_tilesets()
-        data = get_starter_style(
+        stylesheet = get_starter_style(
             job_param.port, tilesets, job_param.data_folder)
         headers = {
             "content-type": "application/json",
             "Cache-Control": 'no-cache, no-store'
         }
-        return Response(content=json.dumps(data), headers=headers)
+        return Response(content=json.dumps(stylesheet), headers=headers)
 
     @app.get("/tilesets/{tileset}/info/tile.json")
     async def get_tileset_info(tileset: str):
@@ -71,10 +71,10 @@ def start_api(job_param: JobParam):
         if tileset not in get_tilesets():
             return Response(status_code=404, headers=headers)
 
-        data = get_tile_json(tileset, job_param.port,
+        tilejson = get_tile_json(tileset, job_param.port,
                              get_tileset_manifest()[tileset])
 
-        return Response(content=json.dumps(data), headers=headers)
+        return Response(content=json.dumps(tilejson), headers=headers)
 
     @app.get("/tilesets/{tileset}/tiles/{z}/{x}/{y}.mvt")
     async def get_tile(tileset: str, z: int, x: int, y: int):
@@ -97,10 +97,10 @@ def start_api(job_param: JobParam):
         if job_param.mode == 'serve_cache':
             return Response(status_code=404, headers=headers)
 
-        data = None
+        tile_data = None
         try:
-            data = tile_utils.get_tile(tileset, x, y, z, manifest.extent)
-            if data is None:
+            tile_data = tile_utils.get_tile(tileset, x, y, z, manifest.extent)
+            if tile_data is None:
                 return Response(status_code=404, headers=headers)
 
         except TimeOutException:
@@ -108,8 +108,8 @@ def start_api(job_param: JobParam):
 
         # update cache
         if not job_param.disable_caching:
-            update_cache(tileset, x, y, z, data)
-        return Response(content=data, headers=headers)
+            update_cache(tileset, x, y, z, tile_data)
+        return Response(content=tile_data, headers=headers)
 
     @app.get("/")
     async def index():
