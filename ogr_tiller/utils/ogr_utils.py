@@ -127,6 +127,7 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
         'version': '1.0.0',
         'attribution': tileset_manifest.attribution,
         'scheme': 'xyz',
+        'format': 'pbf',
         'tiles': [f'http://localhost:{port}/tilesets/' + tileset + '/tiles/{z}/{x}/{y}.mvt'],
         'minzoom': tileset_manifest.minzoom,
         'maxzoom': tileset_manifest.maxzoom,
