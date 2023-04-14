@@ -4,7 +4,7 @@ import os
 from typing import Any, List
 import glob 
 from rich import print
-
+import json
 from ogr_tiller.poco.tileset_manifest import TilesetManifest
 
 # setup tile cache
@@ -81,17 +81,19 @@ def setup_mbtile_cache(tileset: str, cache_folder: str, tilejson: any):
     global cache_location, tileset_db_files
 
     def process_value(key, val):
+        if key == 'vector_layers':
+            return ['json', json.dumps({'vector_layers': val})]
         if type(val) is dict:
-            return val.__repr__()
+            return [key, val.__repr__()]
         if type(val) is list:
             formated = [str(item) for item in val]
-            return ','.join(formated)
+            return [key, ','.join(formated)]
         if type(val) is tuple:
             formated = [str(item) for item in list(val)]
-            return ','.join(formated)
+            return [key, ','.join(formated)]
         if type(val) is int:
-            return str(val)
-        return val
+            return [key, str(val)]
+        return [key, val]
 
     # update global variablea
     cache_location = cache_folder
@@ -114,7 +116,7 @@ def setup_mbtile_cache(tileset: str, cache_folder: str, tilejson: any):
         ''')
         conn.execute('CREATE TABLE metadata (name text, value text);')
         conn.commit()
-        manifest_rows = [[k, process_value(k, v)] for k, v in tilejson.items()]
+        manifest_rows = [ process_value(k, v) for k, v in tilejson.items()]
         conn.executemany('INSERT INTO metadata(name,value) VALUES(?,?);', manifest_rows)
         conn.commit()
     except Error as e:
