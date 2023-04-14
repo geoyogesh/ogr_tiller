@@ -5,20 +5,22 @@ from typing import Any, List
 import glob 
 from rich import print
 
+from ogr_tiller.poco.tileset_manifest import TilesetManifest
+
 # setup tile cache
 cache_location = None
-db_file = None
+tileset_db_files = {}
 
 
-def update_cache(tileset: str, x: int, y: int, z: int, data: Any):  
+def update_cache(tileset: str, x: int, y: int, z: int, tile_data: Any):  
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(tileset_db_files[tileset])
         sql = '''
-        INSERT INTO tiles(tileset,x,y,z,data)
-              VALUES(?,?,?,?,?) 
+        INSERT INTO tiles(tile_row,tile_column,zoom_level,tile_data)
+              VALUES(?,?,?,?) 
         '''
-        conn.execute(sql, (tileset, x, y, z, data))
+        conn.execute(sql, (x, y, z, tile_data))
         conn.commit()
     except Error as e:
         print(e)
@@ -26,14 +28,14 @@ def update_cache(tileset: str, x: int, y: int, z: int, data: Any):
         if conn:
             conn.close()
 
-def update_multiple_cache(rows: List[Any]):  
-    # [(tileset, x, y, z, data)]
+def update_multiple_cache(tileset: str, rows: List[Any]):  
+    # [(tileset, x, y, z, tile_data)]
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(tileset_db_files[tileset])
         sql = '''
-        INSERT INTO tiles(tileset,x,y,z,data)
-              VALUES(?,?,?,?,?) 
+        INSERT INTO tiles(tile_row,tile_column,zoom_level,tile_data)
+              VALUES(?,?,?,?) 
         '''
         conn.executemany(sql, rows)
         conn.commit()
@@ -46,11 +48,11 @@ def update_multiple_cache(rows: List[Any]):
 
 def read_cache(tileset: str, x: int, y: int, z: int):
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(tileset_db_files[tileset])
         cursor = conn.cursor()
 
-        sql = """SELECT data from tiles where tileset = ? and x = ? and y = ? and z = ? """
-        cursor.execute(sql, (tileset, x, y, z))
+        sql = """SELECT tile_data from tiles where tile_row = ? and tile_column = ? and zoom_level = ? """
+        cursor.execute(sql, (x, y, z))
         record = cursor.fetchone()
         result = None
         if record is None:
@@ -61,45 +63,58 @@ def read_cache(tileset: str, x: int, y: int, z: int):
         return result
 
     except sqlite3.Error as error:
-        print("Failed to read data from sqlite table", error)
+        print("Failed to read tile_data from sqlite table", error)
     finally:
         if conn:
             conn.close()
 
 
 def cleanup_mbtile_cache(cache_folder):
-    db_file_pattern = os.path.join(cache_folder, 'cache.*')
+    db_file_pattern = os.path.join(cache_folder, '*.*')
     files = glob.glob(db_file_pattern, recursive=False)
     for file in files:
-        if os.path.isfile(file):
+        if os.path.isfile(file) and not file.endswith('.gitkeep'):
             os.remove(file)
 
 
-def setup_mbtile_cache(cache_folder):
-    global cache_location, db_file
+def setup_mbtile_cache(tileset: str, cache_folder: str, tilejson: any):
+    global cache_location, tileset_db_files
+
+    def process_value(val):
+        if type(val) is dict:
+            return val.__repr__()
+        if type(val) is list:
+            formated = [str(item) for item in val]
+            return ','.join(formated)
+        return val
 
     # update global variablea
     cache_location = cache_folder
-    db_file = os.path.join(cache_location, 'cache.mbtiles')
+    tileset_db_files[tileset] = os.path.join(cache_location, f'{tileset}.mbtiles')
 
-    if os.path.isfile(db_file):
+    if os.path.isfile(tileset_db_files[tileset]):
         return
 
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(tileset_db_files[tileset])
         conn.execute('''
         CREATE TABLE tiles (
-            tileset TEXT NOT NULL,
-            x INTEGER NOT NULL,
-            y INTEGER NOT NULL,
-            z INTEGER NOT NULL,
-            data BLOB,
-            PRIMARY KEY (tileset, x, y, z)
+            tile_row INTEGER NOT NULL,
+            tile_column INTEGER NOT NULL,
+            zoom_level INTEGER NOT NULL,
+            tile_data BLOB,
+            PRIMARY KEY (tile_row, tile_column, zoom_level)
         );
         ''')
+        conn.execute('CREATE TABLE metadata (name text, value text);')
+        conn.executemany('INSERT INTO metadata(name,value) VALUES(?,?)', [(k, process_value(v)) for k, v in tilejson.items()])
+        conn.commit()
     except Error as e:
         print(e)
     finally:
         if conn:
             conn.close()
+
+def update_metadata():
+    pass

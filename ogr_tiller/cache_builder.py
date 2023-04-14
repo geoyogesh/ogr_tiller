@@ -4,9 +4,7 @@ from ogr_tiller.poco.tileset_manifest import TilesetManifest
 from ogr_tiller.utils.job_utils import common
 from ogr_tiller.utils.monitor import timeit
 from ogr_tiller.utils.ogr_utils import get_data_location, get_tile_json, get_tileset_manifest, get_tilesets
-from ogr_tiller.utils.sqlite_utils import cleanup_mbtile_cache, update_cache, update_multiple_cache
-from shapely.geometry import box, shape, mapping
-from supermercado import edge_finder, uniontiles, burntiles, super_utils
+from ogr_tiller.utils.sqlite_utils import cleanup_mbtile_cache, update_multiple_cache
 import ogr_tiller.utils.tile_utils as tile_utils
 from rich import print
 from rich.progress import Progress, TextColumn, SpinnerColumn, BarColumn, MofNCompleteColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -47,7 +45,7 @@ def build_cache(job_param: JobParam):
         
         print(f'{tileset}: number of tiles generated for {tileset} {len(result)}')
         print(f'{tileset}: writing the mbtile files')
-        update_multiple_cache(result)
+        update_multiple_cache(tileset, result)
         print(f'{tileset}: completed generating tileset: {tileset}')
 
     with Progress(

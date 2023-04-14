@@ -79,8 +79,8 @@ def get_tile_descendant_tiles(
             
             if srid != 'EPSG:3857':
                 bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
-            data = tile_utils.encode_tile(layer_features, bbox, manifest.extent)
-            result.append((tileset, x, y, z, data))
+            tile_data = tile_utils.encode_tile(layer_features, bbox, manifest.extent)
+            result.append((x, y, z, tile_data))
 
             progress.update(progress_task_id, advance=1)
                 
@@ -116,8 +116,8 @@ def get_tile(tileset: str, x: int, y: int, z: int, extent: int):
     
     if srid != 'EPSG:3857':
         bbox = get_bbox_for_crs("EPSG:3857", srid, bbox)
-    data = tile_utils.encode_tile(layer_features, bbox, extent)
-    return data
+    tile_data = tile_utils.encode_tile(layer_features, bbox, extent)
+    return tile_data
     
 
 def buffered_bbox(bbox_shape, unit_distance: float, buffer: int):

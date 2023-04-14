@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 import fiona
 from shapely.geometry import box, shape
 import os
@@ -85,7 +85,7 @@ def tileset_manifest(tilesets):
     return result
 
 
-def setup_ogr_cache(data_folder):
+def setup_ogr_cache(data_folder) -> List[str]:
     # update global variablea
     global data_location, cached_tileset_names, cached_tileset_manifest
     data_location = data_folder
@@ -95,6 +95,7 @@ def setup_ogr_cache(data_folder):
         if file.endswith('.gpkg'):
             cached_tileset_names.append(file.split('.')[0])
     cached_tileset_manifest = tileset_manifest(cached_tileset_names)
+    return cached_tileset_names
 
 
 def setup_stylesheet_cache(stylesheet_folder):
@@ -167,7 +168,7 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
         })
 
         # include label point layer if it is polygon
-        if geometry_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon']:
+        if geometry_type in ['Polygon', '3D Polygon', 'MultiPolygon', '3D MultiPolygon', 'UnKnown']:
             vector_layers.append({
                 'id': f'{layer_name}_label',
                 'fields': fields,
@@ -181,7 +182,7 @@ def get_tile_json(tileset: str, port: str, tileset_manifest: TilesetManifest) ->
         bounds = get_bbox_for_crs(result['crs'], 'EPSG:4326', result['bounds'])
         result['bounds'] = bounds
         result['center'] = [(bounds[0] + bounds[2]) / 2,
-                            (bounds[1] + bounds[3]) / 2]
+                            (bounds[1] + bounds[3]) / 2, result['maxzoom']]
     else:
         result['center'] = None
 
