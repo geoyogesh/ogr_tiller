@@ -80,12 +80,17 @@ def cleanup_mbtile_cache(cache_folder):
 def setup_mbtile_cache(tileset: str, cache_folder: str, tilejson: any):
     global cache_location, tileset_db_files
 
-    def process_value(val):
+    def process_value(key, val):
         if type(val) is dict:
             return val.__repr__()
         if type(val) is list:
             formated = [str(item) for item in val]
             return ','.join(formated)
+        if type(val) is tuple:
+            formated = [str(item) for item in list(val)]
+            return ','.join(formated)
+        if type(val) is int:
+            return str(val)
         return val
 
     # update global variablea
@@ -108,7 +113,9 @@ def setup_mbtile_cache(tileset: str, cache_folder: str, tilejson: any):
         );
         ''')
         conn.execute('CREATE TABLE metadata (name text, value text);')
-        conn.executemany('INSERT INTO metadata(name,value) VALUES(?,?)', [(k, process_value(v)) for k, v in tilejson.items()])
+        conn.commit()
+        manifest_rows = [[k, process_value(k, v)] for k, v in tilejson.items()]
+        conn.executemany('INSERT INTO metadata(name,value) VALUES(?,?);', manifest_rows)
         conn.commit()
     except Error as e:
         print(e)
