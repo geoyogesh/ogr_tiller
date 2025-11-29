@@ -1,4 +1,4 @@
-# OGR Tiler
+# CartoKit
 
 A dynamic vector tile generation service that converts OGR-compatible geospatial data formats into Mapbox Vector Tiles (MVT) on-the-fly.
 
@@ -7,7 +7,7 @@ A dynamic vector tile generation service that converts OGR-compatible geospatial
 
 ## Overview
 
-**OGR Tiler** is a lightweight, development-focused vector tile server that enables cartographers and geospatial developers to quickly prototype maps without relying on commercial services like Mapbox.
+**CartoKit** is a lightweight, development-focused vector tile server that enables cartographers and geospatial developers to quickly prototype maps without relying on commercial services like Mapbox.
 
 ### Key Features
 
