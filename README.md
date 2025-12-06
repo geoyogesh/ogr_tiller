@@ -7,7 +7,7 @@ A dynamic vector tile generation service that converts OGR-compatible geospatial
 
 ## Overview
 
-**CartoKit** is a lightweight, development-focused vector tile server that enables cartographers and geospatial developers to quickly prototype maps without relying on commercial services like Mapbox.
+**CartoKit** is a lightweight, cartographer focused vector tile server that enables cartographers and geospatial developers to quickly prototype maps
 
 ### Key Features
 
